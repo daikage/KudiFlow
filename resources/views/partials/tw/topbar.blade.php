@@ -35,5 +35,9 @@
       <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-outline-variant/30">Sign in</a>
       <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary">Register</a>
     @endguest
+    <button id="open-notifications" class="relative p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
+      <span class="material-symbols-outlined">notifications</span>
+      <span id="notify-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-error text-white rounded-full px-1.5 py-[1px] leading-none"></span>
+    </button>
   </div>
 </header>

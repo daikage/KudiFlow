@@ -14,6 +14,7 @@ use App\Http\Controllers\UI\SettingsController;
 use App\Http\Controllers\UI\SupportController;
 use App\Http\Controllers\UI\ProfileController;
 use App\Http\Middleware\SuperAdminMiddleware;
+use App\Http\Controllers\NotificationController;
 
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
@@ -187,3 +188,23 @@ Route::prefix('sa')
 Route::get('/ui/admin/subscriptions', function () {
     return redirect()->route('sa.subscriptions.index');
 })->middleware(['auth'])->name('admin.subscriptions.index');
+
+// Notifications API (auth only)
+Route::prefix('notifications')->group(function() {
+    Route::get('unread', [\App\Http\Controllers\NotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('read_all', [\App\Http\Controllers\NotificationController::class, 'readAll'])->name('notifications.read_all');
+});
+
+// Apply the changes from the code block
+Route::middleware(['tenant', 'tenant.status'])->group(function() {
+    // All your tenant routes here
+});
+
+// Apply the changes from the code block
+Route::prefix('admin')->middleware(['auth', 'superadmin'])->group(function() {
+    // ... existing routes ...
+    Route::get('tenants', [\App\Http\Controllers\SA\SuperAdminController::class, 'tenants'])->name('admin.tenants.index');
+    Route::post('tenants/{tenant}/pause', [\App\Http\Controllers\SA\SuperAdminController::class, 'pauseTenant'])->name('admin.tenants.pause');
+    Route::post('tenants/{tenant}/resume', [\App\Http\Controllers\SA\SuperAdminController::class, 'resumeTenant'])->name('admin.tenants.resume');
+    Route::delete('tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('admin.tenants.destroy');
+});

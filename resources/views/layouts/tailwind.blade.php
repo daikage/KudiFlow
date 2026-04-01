@@ -102,6 +102,7 @@
       @yield('content')
     </main>
   </div>
+   @include('partials.notifications-modal')
 
   @stack('scripts')
 </body>

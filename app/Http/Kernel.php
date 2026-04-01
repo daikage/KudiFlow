@@ -61,6 +61,8 @@ class Kernel extends HttpKernel
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+
+        'tenant.status' => \App\Http\Middleware\CheckTenantStatus::class,
     ];
 
     // If your app relies on the legacy $routeMiddleware property, you can keep this for backward compatibility:

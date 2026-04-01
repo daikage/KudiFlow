@@ -31,7 +31,7 @@ class SuperAdminController extends Controller
 
     public function tenants()
     {
-        $tenants = Tenant::orderBy('name')->paginate(20, ['id','name','subdomain','created_at']);
+        $tenants = Tenant::with('owner')->orderBy('name')->paginate(20);
         return view('sa.tenants.index', compact('tenants'));
     }
 
@@ -51,5 +51,39 @@ class SuperAdminController extends Controller
     {
         // Redirect into normal UI with selected tenant context
         return redirect()->route('ui.dashboard', ['tenant_id' => $tenant->id]);
+    }
+
+    public function pauseTenant(Tenant $tenant, Request $request)
+    {
+        $request->validate([
+            'reason' => ['required', 'string', 'max:500']
+        ]);
+
+        $tenant->pause($request->reason);
+        
+        return back()->with('success', "Tenant {$tenant->name} has been paused.");
+    }
+
+    public function resumeTenant(Tenant $tenant)
+    {
+        $tenant->resume();
+        
+        return back()->with('success', "Tenant {$tenant->name} has been resumed.");
+    }
+
+    public function destroyTenant(Tenant $tenant)
+    {
+        $name = $tenant->name;
+        $tenant->delete();
+        
+        return back()->with('success', "Tenant {$name} has been deleted.");
+    }
+
+    public function createTenant(Tenant $tenant)
+    {
+        $name = $tenant->name;
+        $tenant->create();
+
+        return back()->with('success', "Tenant {$name} has been created.");
     }
 }
