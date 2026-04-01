@@ -7,49 +7,60 @@
   <section class="space-y-6">
     <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/5">
       <h2 class="text-xl font-bold mb-4">New Product</h2>
-      <form action="#" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      @if($errors->any())
+        <div class="mb-4 p-3 rounded bg-error/10 text-error text-sm font-semibold">Please fix the errors below.</div>
+      @endif
+
+      <form action="{{ route('ui.products.store') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         @csrf
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Product Name</label>
-          <input class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="e.g. Pepsi 50cl">
+          <input name="name" value="{{ old('name') }}" class="w-full bg-surface-container-low border @error('name') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="e.g. Pepsi 50cl">
+          @error('name')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">SKU</label>
-          <input class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="e.g. PEP-50">
+          <input name="sku" value="{{ old('sku') }}" class="w-full bg-surface-container-low border @error('sku') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="e.g. PEP-50">
+          @error('sku')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Category</label>
-          <select class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2">
-            <option>General</option>
+          <select name="category_id" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2">
+            <option value="">— None —</option>
+            @foreach($categories as $c)
+              <option value="{{ $c->id }}" @selected(old('category_id')==$c->id)>{{ $c->name }}</option>
+            @endforeach
           </select>
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Status</label>
-          <select class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2">
-            <option>Active</option>
-            <option>Inactive</option>
+          <select name="status" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2">
+            <option value="active" @selected(old('status','active')=='active')>Active</option>
+            <option value="inactive" @selected(old('status')=='inactive')>Inactive</option>
           </select>
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Cost</label>
-          <input inputmode="decimal" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0.00">
+          <input name="cost" inputmode="decimal" value="{{ old('cost') }}" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0.00">
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Price</label>
-          <input inputmode="decimal" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0.00">
+          <input name="price" inputmode="decimal" value="{{ old('price') }}" class="w-full bg-surface-container-low border @error('price') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="0.00">
+          @error('price')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Stock</label>
-          <input inputmode="numeric" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0">
+          <input name="stock" inputmode="numeric" value="{{ old('stock',0) }}" class="w-full bg-surface-container-low border @error('stock') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="0">
+          @error('stock')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
         </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Min Stock (Alert)</label>
-          <input inputmode="numeric" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0">
+          <input name="min_stock" inputmode="numeric" value="{{ old('min_stock',0) }}" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2" placeholder="0">
         </div>
-
         <div class="md:col-span-2 flex gap-2 pt-2">
-          <a href="/ui/products" class="px-4 py-2 rounded-lg bg-white border border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant/30">Cancel</a>
-          <button type="button" class="px-4 py-2 rounded-lg bg-primary text-on-primary shadow-sm">Save Product</button>
+          <a href="{{ route('ui.products.index') }}" class="px-4 py-2 rounded-lg bg-white border border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant/30">Cancel</a>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-primary text-on-primary shadow-sm">Save Product</button>
         </div>
       </form>
     </div>

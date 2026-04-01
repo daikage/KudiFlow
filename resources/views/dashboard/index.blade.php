@@ -13,17 +13,23 @@
             <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">trending_up</span>
             Real-time Profit Today
           </span>
-          <h2 class="font-headline text-5xl md:text-6xl font-extrabold mt-6 tracking-tight">₦42,850.00</h2>
-          <p class="text-primary-fixed/80 mt-2 font-medium">+12.5% from same time yesterday</p>
+          <h2 class="font-headline text-5xl md:text-6xl font-extrabold mt-6 tracking-tight">₦{{ number_format($profitToday, 2) }}</h2>
+          <p class="text-primary-fixed/80 mt-2 font-medium">
+            @if($deltaPercent >= 0)
+              +{{ number_format($deltaPercent, 1) }}% from same time yesterday
+            @else
+              {{ number_format($deltaPercent, 1) }}% from same time yesterday
+            @endif
+          </p>
         </div>
         <div class="mt-12 flex gap-8">
           <div>
-            <p class="text-xs uppercase tracking-widest text-primary-fixed/60 font-bold">Total Sales</p>
-            <p class="text-xl font-bold">₦154,200</p>
+            <p class="text-xs uppercase tracking-widest text-primary-fixed/60 font-bold">Total Sales (Today)</p>
+            <p class="text-xl font-bold">₦{{ number_format($salesToday, 0) }}</p>
           </div>
           <div>
-            <p class="text-xs uppercase tracking-widest text-primary-fixed/60 font-bold">Expenses</p>
-            <p class="text-xl font-bold">₦111,350</p>
+            <p class="text-xs uppercase tracking-widest text-primary-fixed/60 font-bold">Expenses (Today)</p>
+            <p class="text-xl font-bold">₦{{ number_format($expensesToday, 0) }}</p>
           </div>
         </div>
       </div>
@@ -36,11 +42,19 @@
           <p class="text-on-surface-variant font-bold text-xs uppercase tracking-wider">Most Sold Today</p>
           <span class="material-symbols-outlined text-primary">stars</span>
         </div>
-        <p class="font-headline text-xl font-bold">Indomie Onion (40ct)</p>
-        <p class="text-sm text-on-surface-variant mt-1">128 units sold today</p>
-        <div class="mt-4 w-full bg-surface-container rounded-full h-2">
-          <div class="profit-gradient h-full rounded-full" style="width: 85%"></div>
-        </div>
+        @if($topProductToday)
+          <p class="font-headline text-xl font-bold">{{ $topProductToday->name }}</p>
+          <p class="text-sm text-on-surface-variant mt-1">{{ $topProductToday->units }} units sold today</p>
+          @php
+            $cap = max(1, $topProductToday->units);
+            $pct = min(100, ($topProductToday->units / $cap) * 100);
+          @endphp
+          <div class="mt-4 w-full bg-surface-container rounded-full h-2">
+            <div class="profit-gradient h-full rounded-full" style="width: {{ $pct }}%"></div>
+          </div>
+        @else
+          <p class="text-sm text-on-surface-variant">No sales recorded yet today.</p>
+        @endif
       </div>
 
       <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/5">
@@ -48,19 +62,21 @@
           <p class="text-error font-bold text-xs uppercase tracking-wider">Low Stock Alerts</p>
           <span class="material-symbols-outlined text-error">warning</span>
         </div>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-medium">Peak Milk (Liquid)</span>
-            <span class="bg-error-container text-on-error-container text-[10px] px-2 py-0.5 rounded-full font-bold">4 LEFT</span>
+        @if($lowStock->count())
+          <div class="space-y-3">
+            @foreach($lowStock as $ls)
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-medium">{{ $ls->name }}</span>
+                <span class="bg-error-container text-on-error-container text-[10px] px-2 py-0.5 rounded-full font-bold">{{ $ls->stock }} LEFT</span>
+              </div>
+            @endforeach
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-medium">Golden Penny Sugar</span>
-            <span class="bg-error-container text-on-error-container text-[10px] px-2 py-0.5 rounded-full font-bold">12 LEFT</span>
-          </div>
-        </div>
-        <button class="w-full mt-4 text-xs font-bold text-primary hover:underline flex items-center justify-center gap-1">
-          Restock Inventory <span class="material-symbols-outlined text-xs">arrow_forward</span>
-        </button>
+        @else
+          <p class="text-sm text-on-surface-variant">No low stock items.</p>
+        @endif
+        <a href="{{ route('ui.products.index') }}" class="w-full mt-4 text-xs font-bold text-primary hover:underline flex items-center justify-center gap-1">
+          Manage Inventory <span class="material-symbols-outlined text-xs">arrow_forward</span>
+        </a>
       </div>
     </div>
   </section>
@@ -85,13 +101,17 @@
         </div>
       </div>
       <div class="flex items-end justify-between h-48 gap-4 px-2">
-        @foreach (['MON'=>[60,40],'TUE'=>[75,35],'WED'=>[90,45],'THU'=>[70,55],'FRI'=>[85,30],'SAT'=>[100,20],'SUN'=>[40,15]] as $d => [$s,$e])
+        @foreach ($weekly as $point)
+          @php
+            $sH = $weeklyMax ? round(($point['sales'] / $weeklyMax) * 100) : 0;
+            $eH = $weeklyMax ? round(($point['expenses'] / $weeklyMax) * 100) : 0;
+          @endphp
           <div class="flex flex-col items-center flex-1 gap-2 h-full">
             <div class="w-full flex items-end justify-center gap-1 h-full">
-              <div class="bg-primary w-full rounded-t-sm" style="height: {{ $s }}%"></div>
-              <div class="bg-secondary-container w-full rounded-t-sm" style="height: {{ $e }}%"></div>
+              <div class="bg-primary w-full rounded-t-sm" style="height: {{ $sH }}%"></div>
+              <div class="bg-secondary-container w-full rounded-t-sm" style="height: {{ $eH }}%"></div>
             </div>
-            <span class="text-[10px] font-bold text-slate-400">{{ $d }}</span>
+            <span class="text-[10px] font-bold text-slate-400">{{ $point['label'] }}</span>
           </div>
         @endforeach
       </div>
@@ -100,31 +120,32 @@
     <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/5 flex flex-col">
       <div class="flex justify-between items-center mb-6">
         <h3 class="font-headline text-lg font-bold">Recent Sales</h3>
-        <button class="text-xs text-primary font-bold">View Ledger</button>
+        <a href="{{ route('ui.sales.index') }}" class="text-xs text-primary font-bold">View Ledger</a>
       </div>
       <div class="space-y-5 flex-1 overflow-y-auto pr-2">
-        @foreach ([
-          ['INV-4921','10:45 AM • Cash Sale','₦14,500','Completed','text-primary'],
-          ['INV-4920','10:12 AM • POS Terminal','₦2,800','Completed','text-primary'],
-          ['INV-4919','09:55 AM • Transfer','₦32,100','Pending','text-tertiary'],
-          ['INV-4918','09:30 AM • Cash Sale','₦1,250','Completed','text-primary'],
-        ] as [$no,$meta,$amt,$status,$cls])
+        @forelse ($recentSales as $s)
+          @php
+            $meta = $s->created_at->format('h:i A') . ' • ' . strtoupper($s->payment_method ?? 'N/A');
+            $cls  = $s->status === 'completed' ? 'text-primary' : ($s->status === 'pending' ? 'text-tertiary' : 'text-on-surface-variant');
+          @endphp
           <div class="flex items-center justify-between group">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
                 <span class="material-symbols-outlined">receipt_long</span>
               </div>
               <div>
-                <p class="text-sm font-bold">{{ $no }}</p>
+                <p class="text-sm font-bold">INV-{{ $s->id }}</p>
                 <p class="text-[10px] text-on-surface-variant font-medium">{{ $meta }}</p>
               </div>
             </div>
             <div class="text-right">
-              <p class="text-sm font-bold">{{ $amt }}</p>
-              <p class="text-[10px] {{ $cls }} font-bold uppercase tracking-tight">{{ $status }}</p>
+              <p class="text-sm font-bold">₦{{ number_format($s->total, 2) }}</p>
+              <p class="text-[10px] {{ $cls }} font-bold uppercase tracking-tight">{{ $s->status }}</p>
             </div>
           </div>
-        @endforeach
+        @empty
+          <p class="text-on-surface-variant text-sm">No recent sales.</p>
+        @endforelse
       </div>
     </div>
   </section>
@@ -133,13 +154,13 @@
   <section class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <div class="md:col-span-1 bg-surface-container-low rounded-xl p-6 flex flex-col justify-center items-center text-center">
       <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-2">Inventory Value</p>
-      <p class="font-headline text-2xl font-bold">₦2.4M</p>
+      <p class="font-headline text-2xl font-bold">₦{{ number_format($inventoryValue, 0) }}</p>
       <p class="text-xs text-primary font-medium mt-1">Ready for sale</p>
     </div>
     <div class="md:col-span-1 bg-surface-container-low rounded-xl p-6 flex flex-col justify-center items-center text-center">
-      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-2">Total Expenses</p>
-      <p class="font-headline text-2xl font-bold">₦111K</p>
-      <p class="text-xs text-error font-medium mt-1">+5% from avg.</p>
+      <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant mb-2">Expenses (MTD)</p>
+      <p class="font-headline text-2xl font-bold">₦{{ number_format($expensesMTD, 0) }}</p>
+      <p class="text-xs text-error font-medium mt-1">Month-to-date</p>
     </div>
     <div class="md:col-span-2 bg-secondary-container/30 border border-secondary/10 rounded-xl p-6 flex items-center gap-6">
       <div class="w-16 h-16 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
@@ -147,7 +168,13 @@
       </div>
       <div>
         <h4 class="font-bold text-secondary">Smart Insight</h4>
-        <p class="text-sm text-secondary/80 leading-relaxed">Purchasing Indomie Onion 70g in bulk tomorrow could save you ₦4,500 based on supplier price drops.</p>
+        @if($topProductToday)
+          <p class="text-sm text-secondary/80 leading-relaxed">
+            {{ $topProductToday->name }} is trending today ({{ $topProductToday->units }} units). Consider restocking if below threshold.
+          </p>
+        @else
+          <p class="text-sm text-secondary/80 leading-relaxed">Make your first sale to unlock tailored insights.</p>
+        @endif
       </div>
     </div>
   </section>

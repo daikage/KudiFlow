@@ -6,8 +6,12 @@
 @section('content')
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-xl font-bold">Expenses</h2>
-    <a href="/ui/expenses/create" class="px-4 py-2 rounded-xl bg-primary text-on-primary shadow-sm">Add Expense</a>
+    <a href="{{ route('ui.expenses.create') }}" class="px-4 py-2 rounded-xl bg-primary text-on-primary shadow-sm">Add Expense</a>
   </div>
+
+  @if(session('success'))
+    <div class="mb-4 p-3 rounded bg-primary/10 text-primary text-sm font-semibold">{{ session('success') }}</div>
+  @endif
 
   <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/5 mb-4">
     <form class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -32,19 +36,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr class="border-t border-outline-variant/10">
-            <td class="px-4 py-3">—</td>
-            <td class="px-4 py-3">—</td>
-            <td class="px-4 py-3 text-right">₦0.00</td>
-            <td class="px-4 py-3 text-right">
-              <a href="/ui/expenses/1" class="px-3 py-1 rounded-lg bg-white border border-outline-variant/30 text-on-surface-variant">View</a>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="4" class="px-4 py-6 text-center text-on-surface-variant">No expenses yet.</td>
-          </tr>
+          @forelse($expenses as $e)
+            <tr class="border-t border-outline-variant/10">
+              <td class="px-4 py-3">{{ $e->title }}</td>
+              <td class="px-4 py-3">{{ $e->date?->format('Y-m-d') }}</td>
+              <td class="px-4 py-3 text-right">₦{{ number_format($e->amount, 2) }}</td>
+              <td class="px-4 py-3 text-right">
+                <a href="{{ route('ui.expenses.show',$e) }}" class="px-3 py-1 rounded-lg bg-white border border-outline-variant/30 text-on-surface-variant">View</a>
+                <a href="{{ route('ui.expenses.edit',$e) }}" class="px-3 py-1 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/30">Edit</a>
+              </td>
+            </tr>
+          @empty
+            <tr><td colspan="4" class="px-4 py-6 text-center text-on-surface-variant">No expenses yet.</td></tr>
+          @endforelse
         </tbody>
       </table>
     </div>
   </div>
+
+  <div class="mt-4">{{ $expenses->links() }}</div>
 @endsection

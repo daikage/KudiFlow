@@ -8,17 +8,32 @@
         class="bg-white/50 border-none rounded-full pl-10 pr-4 py-2 text-sm w-80 focus:ring-2 focus:ring-primary outline-none transition-all"
         placeholder="@yield('search_placeholder', 'Search…')" type="text"/>
     </div>
+
+    @if(auth()->check() && (auth()->user()->super_admin ?? false))
+      <form method="GET" action="" class="ml-4">
+        <select name="tenant_id" class="bg-white/70 border border-outline-variant/30 rounded-lg px-2 py-1 text-sm" onchange="this.form.submit()">
+          <option value="1" @selected(request('tenant_id', session('tenant_id', 1)) == 1)>Company #1</option>
+          <!-- Populate with tenant list when available -->
+        </select>
+      </form>
+    @endif
   </div>
+
   <div class="flex items-center gap-4">
-    <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
-      <span class="material-symbols-outlined">notifications</span>
-    </button>
-    <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
-      <span class="material-symbols-outlined">help_outline</span>
-    </button>
-    <div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
-      <img alt="User profile photo" class="w-full h-full object-cover"
-           src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-4aup12ahkVA7Fjum8jzsIadjcSvnNZWTSofbqA2xRHRvhWLwJW2jU_xqqF1zPTTsaqaNJ5zugOwrYJesApZuhtmG_-oY6n9u6jwGmfuW5kkOiDxLW2en7qm5NMi7pnkLWESeaQ9-SXnHdNKOHu_uXkoS3llgSkI-3OHtaWeR2pPpV1xfftQEUUuO4HGasJFA77Ka5qBB54pM0vsl9DlrHXuH1IkuKafq7omurINPAoMtMpqfOlNRqJMn-_4q3fbSgl7TVVhOEQ"/>
-    </div>
+    @auth
+      <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
+      <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors"
+              onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
+      <div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
+        <img alt="User profile photo" class="w-full h-full object-cover"
+             src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=10b981&color=fff"/>
+      </div>
+    @endauth
+    @guest
+      <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-outline-variant/30">Sign in</a>
+      <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary">Register</a>
+    @endguest
   </div>
 </header>

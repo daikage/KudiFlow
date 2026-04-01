@@ -91,12 +91,12 @@
 <body class="bg-surface text-on-surface min-h-screen antialiased">
   {{-- Sidebar (shown unless page hides it) --}}
   @if (!View::hasSection('no-sidebar'))
-    @include('partials.tw.sidebar')
+    @include('partials.sidebar')
   @endif
 
   {{-- Content wrapper shifts if sidebar is visible --}}
   <div class="@if (!View::hasSection('no-sidebar')) ml-64 @endif flex flex-col min-h-screen">
-    @include('partials.tw.topbar')
+    @include('partials.topbar')
 
     <main class="@yield('main_classes', 'p-8 max-w-7xl mx-auto space-y-8 w-full')">
       @yield('content')

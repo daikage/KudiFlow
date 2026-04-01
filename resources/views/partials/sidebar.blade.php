@@ -1,5 +1,25 @@
 @php
     $is = fn($pattern) => request()->is($pattern);
+    $user = auth()->user();
+
+    // Ensure fallbacks in case view composer didn't bind values
+    $super = $super ?? ($user && ($user->super_admin ?? false));
+    $tenantId = app()->bound('tenant_id')
+        ? app('tenant_id')
+        : (request('tenant_id') ?? session('tenant_id', $user->tenant_id ?? 1));
+
+    $perm = $perm ?? (
+        $super
+            ? ['inventory'=>true,'sales'=>true,'finance'=>true,'people'=>true,'admin'=>true]
+            : (\App\Models\TenantRolePermission::where('tenant_id', $tenantId)
+                ->where('role', $user->role ?? 'staff')
+                ->value('permissions') ?? [])
+    );
+
+    // NEW: Show company-bound menus only when:
+    // - user is NOT super admin, or
+    // - user is super admin AND currently inside the company app area (/ui/*).
+    $showCompanyMenus = (!$super) || request()->is('ui/*');
 @endphp
 
 <aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50">
@@ -9,87 +29,97 @@
   </div>
 
   <nav class="flex-1 flex flex-col gap-1">
-    <!-- Overview -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70">Overview</p>
-    <a href="/ui/dashboard"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/dashboard') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined" style="{{ $is('ui/dashboard') ? "font-variation-settings: 'FILL' 1" : '' }}">dashboard</span>
-      <span class="font-medium text-sm">Dashboard</span>
-    </a>
+    @if($showCompanyMenus)
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70">Overview</p>
+      <a href="{{ route('ui.dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/dashboard') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined" style="{{ $is('ui/dashboard') ? "font-variation-settings: 'FILL' 1" : '' }}">dashboard</span>
+        <span class="font-medium text-sm">Dashboard</span>
+      </a>
+    @endif
 
-    <!-- Inventory -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Inventory</p>
-    <a href="/ui/products"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/products*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">inventory_2</span>
-      <span class="font-medium text-sm">Products</span>
-    </a>
-    <a href="/ui/categories"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/categories*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">category</span>
-      <span class="font-medium text-sm">Categories</span>
-    </a>
+    @if($showCompanyMenus && ($perm['inventory'] ?? false))
+      <!-- Inventory -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Inventory</p>
+      <a href="{{ route('ui.products.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/products*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">inventory_2</span>
+        <span class="font-medium text-sm">Products</span>
+      </a>
+      <a href="{{ route('ui.categories.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/categories*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">category</span>
+        <span class="font-medium text-sm">Categories</span>
+      </a>
+    @endif
 
-    <!-- Sales -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Sales</p>
-    <a href="/ui/products"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/products') && ! $is('ui/products/*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">point_of_sale</span>
-      <span class="font-medium text-sm">Sales POS</span>
-    </a>
-    <a href="/ui/sales"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/sales*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">receipt_long</span>
-      <span class="font-medium text-sm">Sales Ledger</span>
-    </a>
+    @if($showCompanyMenus && ($perm['sales'] ?? false))
+      <!-- Sales -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Sales</p>
+      <a href="{{ route('ui.sales.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/sales*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <span class="font-medium text-sm">Sales Ledger</span>
+      </a>
+    @endif
 
-    <!-- Finance -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Finance</p>
-    <a href="/ui/expenses"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/expenses*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">account_balance_wallet</span>
-      <span class="font-medium text-sm">Expenses</span>
-    </a>
+    @if($showCompanyMenus && ($perm['finance'] ?? false))
+      <!-- Finance -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Finance</p>
+      <a href="{{ route('ui.expenses.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/expenses*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span class="font-medium text-sm">Expenses</span>
+      </a>
+    @endif
 
-    <!-- People -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">People</p>
-    <a href="/ui/staff"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/staff*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">group</span>
-      <span class="font-medium text-sm">Staff</span>
-    </a>
+    @if($showCompanyMenus && ($perm['people'] ?? false))
+      <!-- People -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">People</p>
+      <a href="{{ route('ui.staff.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/staff*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">group</span>
+        <span class="font-medium text-sm">Staff</span>
+      </a>
+    @endif
 
-    <!-- Admin -->
-    <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Admin</p>
-    <a href="/ui/admin"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/admin') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">admin_panel_settings</span>
-      <span class="font-medium text-sm">Admin Overview</span>
-    </a>
-    <a href="/ui/admin/subscriptions"
-       class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-       {{ $is('ui/admin/subscriptions*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-      <span class="material-symbols-outlined">autorenew</span>
-      <span class="font-medium text-sm">Subscriptions</span>
-    </a>
+    @if($showCompanyMenus && ($perm['admin'] ?? false))
+      <!-- Company Admin -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Admin</p>
+      <a href="{{ route('admin.roles.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/admin/roles') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">lock_open_right</span>
+        <span class="font-medium text-sm">Permissions</span>
+      </a>
+    @endif
+
+    @if($super)
+      <!-- Super Admin Platform Area -->
+      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Platform</p>
+      <a href="{{ route('sa.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('sa') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">public</span>
+        <span class="font-medium text-sm">Platform Dashboard</span>
+      </a>
+      <a href="{{ route('sa.tenants.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('sa/tenants*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">domain</span>
+        <span class="font-medium text-sm">Companies</span>
+      </a>
+      <a href="{{ route('sa.subscriptions.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('sa/subscriptions*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">autorenew</span>
+        <span class="font-medium text-sm">Subscriptions</span>
+      </a>
+    @endif
   </nav>
 
   <div class="mt-auto flex flex-col gap-1 pt-4 border-t border-outline-variant/10">
-    <a href="/ui/settings/general"
-       class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+    <a href="{{ route('settings.general') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
       <span class="material-symbols-outlined">settings</span>
       <span class="text-sm">Settings</span>
     </a>
-    <a href="/ui/support"
-       class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+    <a href="{{ route('support.index') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
       <span class="material-symbols-outlined">contact_support</span>
       <span class="text-sm">Support</span>
     </a>
