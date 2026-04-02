@@ -135,10 +135,20 @@
   </nav>
 
   <div class="mt-auto flex flex-col gap-1 pt-4 border-t border-outline-variant/10">
-    <a href="{{ route('settings.general') }}"
-       class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+    <a href="{{ route('ui.settings.general') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-all group
+       text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800">
       <span class="material-symbols-outlined">settings</span>
       <span class="text-sm">Settings</span>
+    </a>
+    <a href="{{ route('ui.settings.billing') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-all group
+       text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800">
+      <span class="material-symbols-outlined">receipt_long</span>
+      <span class="text-sm">Billing</span>
+    </a>
+    <a href="{{ route('ui.settings.notifications') }}" class="flex items-center gap-3 px-4 py-2 rounded-lg transition-all group
+       text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="text-sm">Notifications</span>
     </a>
     <a href="{{ route('support.index') }}"
        class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">

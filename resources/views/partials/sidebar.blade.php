@@ -1,4 +1,13 @@
 @php
+    // Determine current tenant trial status to control admin menus during trial
+    $tenantId = app()->bound('tenant_id') ? app('tenant_id') : (auth()->user()->tenant_id ?? 1);
+    $sub = \App\Models\Subscription::where('tenant_id', $tenantId)->latest('id')->first();
+    $trialActive = $sub && $sub->status === 'trial' && $sub->trial_ends_at && now()->lt($sub->trial_ends_at);
+    // During trial, hide tenant "Admin" section, but show all other company menus.
+    $showAdminSection = !$trialActive;
+@endphp
+
+@php
     $is = fn($pattern) => request()->is($pattern);
     $user = auth()->user();
 
@@ -86,7 +95,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['admin'] ?? false))
+    @if($showCompanyMenus && ($perm['admin'] ?? false) && $showAdminSection)
       <!-- Company Admin -->
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Admin</p>
       <a href="{{ route('admin.roles.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
@@ -127,9 +136,17 @@
   </nav>
 
   <div class="mt-auto flex flex-col gap-1 pt-4 border-t border-outline-variant/10">
-    <a href="{{ route('settings.general') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+    <a href="{{ route('ui.settings.general') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
       <span class="material-symbols-outlined">settings</span>
       <span class="text-sm">Settings</span>
+    </a>
+    <a href="{{ route('ui.settings.billing') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="text-sm">Billing</span>
+    </a>
+    <a href="{{ route('ui.settings.notifications') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
+      <span class="material-symbols-outlined">notifications</span>
+      <span class="text-sm">Notifications</span>
     </a>
     <a href="{{ route('support.index') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
       <span class="material-symbols-outlined">contact_support</span>

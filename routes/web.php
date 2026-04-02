@@ -15,6 +15,8 @@ use App\Http\Controllers\UI\SupportController;
 use App\Http\Controllers\UI\ProfileController;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SA\SubscriptionsController as SA_SubscriptionsController;
+use App\Http\Controllers\UI\BillingController;
 
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
@@ -179,8 +181,15 @@ Route::prefix('sa')
         Route::get('/tenants/{tenant}/dashboard', [\App\Http\Controllers\SA\SuperAdminController::class, 'tenantDashboard'])
             ->name('sa.tenants.dashboard');
 
-        Route::get('/subscriptions', [\App\Http\Controllers\SA\SubscriptionsController::class, 'index'])->name('sa.subscriptions.index');
+        Route::get('/subscriptions', [SA_SubscriptionsController::class, 'index'])->name('sa.subscriptions.index');
     });
+
+// Super Admin: Subscription Plans management
+Route::middleware(['auth', 'superadmin'])->prefix('sa')->name('sa.')->group(function () {
+    Route::get('/subscriptions', [SA_SubscriptionsController::class, 'index'])->name('subscriptions.index');
+    Route::post('/subscriptions/plans', [SA_SubscriptionsController::class, 'storePlan'])->name('subscriptions.plans.store');
+    Route::delete('/subscriptions/plans/{plan}', [SA_SubscriptionsController::class, 'destroyPlan'])->name('subscriptions.plans.destroy');
+});
 
 // [BACKWARD COMPAT] If some parts of the app call /admin/tenants/{id}, route them here and require superadmin
 Route::middleware(['auth', \App\Http\Middleware\TenantMiddleware::class, \App\Http\Middleware\SuperAdminMiddleware::class])->group(function () {
@@ -212,15 +221,25 @@ Route::prefix('admin')->middleware(['auth', 'superadmin'])->group(function() {
     Route::delete('tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('admin.tenants.destroy');
 });
 
-// Support & Profile routes (ensure these exist for topbar links)
+// Settings + Support + Profile (ensure present)
 Route::middleware(['auth', 'tenant', 'tenant.status'])->group(function () {
-    // Support center
-    Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+    Route::get('/support', [\App\Http\Controllers\UI\SupportController::class, 'index'])->name('support.index');
 
-    // Profile pages
     Route::prefix('ui')->name('ui.')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
-        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // NEW
+        Route::get('/profile', [\App\Http\Controllers\UI\ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [\App\Http\Controllers\UI\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [\App\Http\Controllers\UI\ProfileController::class, 'update'])->name('profile.update');
+
+        // Settings
+        Route::get('/settings/general', [\App\Http\Controllers\UI\SettingsController::class, 'general'])->name('settings.general');
+        Route::put('/settings/general', [\App\Http\Controllers\UI\SettingsController::class, 'updateGeneral'])->name('settings.general.update');
+        Route::get('/settings/billing', [\App\Http\Controllers\UI\SettingsController::class, 'billing'])->name('settings.billing');
+        Route::post('/settings/billing/upgrade', [\App\Http\Controllers\UI\BillingController::class, 'upgrade'])->name('billing.upgrade');
+        Route::get('/settings/notifications', [\App\Http\Controllers\UI\SettingsController::class, 'notifications'])->name('settings.notifications');
     });
+});
+
+// Ensure upgrade route is registered with the correct name (ui.billing.upgrade)
+Route::middleware(['auth', 'tenant', 'tenant.status'])->group(function () {
+    Route::post('/ui/settings/billing/upgrade', [BillingController::class, 'upgrade'])->name('ui.billing.upgrade');
 });
