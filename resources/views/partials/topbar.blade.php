@@ -14,22 +14,30 @@
         <span class="material-symbols-outlined">notifications</span>
         <span id="notify-badge" class="absolute -top-1 -right-1 bg-error text-on-error text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
     </button>
-    <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
+    <a href="{{ route('support.index') }}" class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
       <span class="material-symbols-outlined">help_outline</span>
-    </button>
+    </a>
 
-    <!-- Sign out -->
-    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
-      @csrf
-    </form>
-    <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150"
-            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-      <span class="material-symbols-outlined">logout</span>
-    </button>
+    @auth
+      <!-- Sign out -->
+      <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+        @csrf
+      </form>
+      <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150"
+              onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
 
-    <div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
-      <img alt="User profile photo" class="w-full h-full object-cover"
-           src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-4aup12ahkVA7Fjum8jzsIadjcSvnNZWTSofbqA2xRHRvhWLwJW2jU_xqqF1zPTTsaqaNJ5zugOwrYJesApZuhtmG_-oY6n9u6jwGmfuW5kkOiDxLW2en7qm5NMi7pnkLWESeaQ9-SXnHdNKOHu_uXkoS3llgSkI-3OHtaWeR2pPpV1xfftQEUUuO4HGasJFA77Ka5qBB54pM0vsl9DlrHXuH1IkuKafq7omurINPAoMtMpqfOlNRqJMn-_4q3fbSgl7TVVhOEQ"/>
-    </div>
+      <!-- Avatar -> link to Profile -->
+      <a href="{{ route('ui.profile.show') }}" class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant block">
+        <img alt="User profile photo" class="w-full h-full object-cover"
+             src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=10b981&color=fff"/>
+      </a>
+    @endauth
+
+    @guest
+      <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-outline-variant/30">Sign in</a>
+      <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary">Register</a>
+    @endguest
   </div>
 </header>

@@ -11,7 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'superadmin'    => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'sa'            => \App\Http\Middleware\SuperAdminMiddleware::class, // optional alias
+            'tenant'        => \App\Http\Middleware\TenantMiddleware::class,
+            'perm'          => \App\Http\Middleware\PermissionMiddleware::class,
+            'role'          => \App\Http\Middleware\RoleMiddleware::class,
+            'tenant.status' => \App\Http\Middleware\CheckTenantStatus::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

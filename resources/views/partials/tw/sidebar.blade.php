@@ -23,6 +23,9 @@
     // - user is NOT super admin, or
     // - user is super admin AND currently inside the company app area (/ui/*).
     $showCompanyMenus = (!$super) || request()->is('ui/*');
+
+    // NEW: flag to know when we're inside company area
+    $inCompanyArea = request()->is('ui/*');
 @endphp
 
 <aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50">
@@ -99,25 +102,35 @@
     @endif
 
     @if($super)
-      <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Platform</p>
-      <a href="{{ route('sa.index') }}"
-         class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-         {{ $is('sa') || $is('sa/*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-        <span class="material-symbols-outlined">public</span>
-        <span class="font-medium text-sm">Platform Dashboard</span>
-      </a>
-      <a href="{{ route('sa.tenants.index') }}"
-         class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-         {{ $is('sa/tenants*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-        <span class="material-symbols-outlined">domain</span>
-        <span class="font-medium text-sm">Companies</span>
-      </a>
-      <a href="{{ route('sa.subscriptions.index') }}"
-         class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
-         {{ $is('sa/subscriptions*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
-        <span class="material-symbols-outlined">autorenew</span>
-        <span class="font-medium text-sm">Subscriptions</span>
-      </a>
+      @if($inCompanyArea)
+        <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Platform</p>
+        <a href="{{ route('sa.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+           {{ $is('sa') || $is('sa/*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+          <span class="material-symbols-outlined">public</span>
+          <span class="font-medium text-sm">Back to Platform</span>
+        </a>
+      @else
+        <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Platform</p>
+        <a href="{{ route('sa.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+           {{ $is('sa') || $is('sa/*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+          <span class="material-symbols-outlined">public</span>
+          <span class="font-medium text-sm">Platform Dashboard</span>
+        </a>
+        <a href="{{ route('sa.tenants.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+           {{ $is('sa/tenants*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+          <span class="material-symbols-outlined">domain</span>
+          <span class="font-medium text-sm">Companies</span>
+        </a>
+        <a href="{{ route('sa.subscriptions.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+           {{ $is('sa/subscriptions*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+          <span class="material-symbols-outlined">autorenew</span>
+          <span class="font-medium text-sm">Subscriptions</span>
+        </a>
+      @endif
     @endif
   </nav>
 

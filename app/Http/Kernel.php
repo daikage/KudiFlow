@@ -40,9 +40,11 @@ class Kernel extends HttpKernel
     ];
 
     /**
-     * Route middleware aliases (preferred over $routeMiddleware).
+     * Route middleware aliases (Laravel 13).
+     * Ensure each alias is unique and points to an existing class.
      */
     protected $middlewareAliases = [
+        // Framework aliases
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
@@ -54,23 +56,11 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        // Your custom tenant middleware alias
-         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+        // Custom aliases
+        'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         'tenant' => \App\Http\Middleware\TenantMiddleware::class,
         'perm' => \App\Http\Middleware\PermissionMiddleware::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class,
-        'auth' => \App\Http\Middleware\Authenticate::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-
         'tenant.status' => \App\Http\Middleware\CheckTenantStatus::class,
-    ];
-
-    // If your app relies on the legacy $routeMiddleware property, you can keep this for backward compatibility:
-    protected $routeMiddleware = [
-        'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
-        'tenant' => \App\Http\Middleware\TenantMiddleware::class,
-        'role'   => \App\Http\Middleware\RoleMiddleware::class,
-        // [ADD] ensure 'perm' alias is registered
-        'perm'   => \App\Http\Middleware\PermissionMiddleware::class,
     ];
 }

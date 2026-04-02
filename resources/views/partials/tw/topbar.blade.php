@@ -21,20 +21,27 @@
 
   <div class="flex items-center gap-4">
     @auth
+      <!-- Support link -->
+      <a href="{{ route('support.index') }}" class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
+        <span class="material-symbols-outlined">help_outline</span>
+      </a>
+
       <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
       <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors"
               onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
         <span class="material-symbols-outlined">logout</span>
       </button>
-      <div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
+      <!-- Avatar -> link to Profile -->
+      <a href="{{ route('ui.profile.show') }}" class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant block">
         <img alt="User profile photo" class="w-full h-full object-cover"
              src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=10b981&color=fff"/>
-      </div>
+      </a>
     @endauth
     @guest
       <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-outline-variant/30">Sign in</a>
       <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary">Register</a>
     @endguest
+
     <button id="open-notifications" class="relative p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
       <span class="material-symbols-outlined">notifications</span>
       <span id="notify-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-error text-white rounded-full px-1.5 py-[1px] leading-none"></span>

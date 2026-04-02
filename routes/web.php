@@ -168,21 +168,24 @@ Route::prefix('ui')->middleware(['auth', \App\Http\Middleware\TenantMiddleware::
 
 // Super Admin (Platform) routes
 Route::prefix('sa')
-    ->middleware(['auth', \App\Http\Middleware\TenantMiddleware::class, SuperAdminMiddleware::class]) // [CHANGED] include TenantMiddleware so tenant_id is always bound
+    ->middleware(['auth', \App\Http\Middleware\TenantMiddleware::class, \App\Http\Middleware\SuperAdminMiddleware::class])
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\SA\SuperAdminController::class, 'index'])->name('sa.index');
 
-        // Tenants (companies/clients)
         Route::get('/tenants', [\App\Http\Controllers\SA\SuperAdminController::class, 'tenants'])->name('sa.tenants.index');
         Route::post('/tenants', [\App\Http\Controllers\SA\SuperAdminController::class, 'storeTenant'])->name('sa.tenants.store');
+        Route::delete('/tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('sa.tenants.destroy');
 
-        // Per-tenant dashboard
         Route::get('/tenants/{tenant}/dashboard', [\App\Http\Controllers\SA\SuperAdminController::class, 'tenantDashboard'])
             ->name('sa.tenants.dashboard');
 
-        // Subscriptions (platform-level)
         Route::get('/subscriptions', [\App\Http\Controllers\SA\SubscriptionsController::class, 'index'])->name('sa.subscriptions.index');
     });
+
+// [BACKWARD COMPAT] If some parts of the app call /admin/tenants/{id}, route them here and require superadmin
+Route::middleware(['auth', \App\Http\Middleware\TenantMiddleware::class, \App\Http\Middleware\SuperAdminMiddleware::class])->group(function () {
+    Route::delete('/admin/tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('admin.tenants.destroy');
+});
 
 // (optional) keep old link but redirect to SA to avoid 404s
 Route::get('/ui/admin/subscriptions', function () {
@@ -207,4 +210,17 @@ Route::prefix('admin')->middleware(['auth', 'superadmin'])->group(function() {
     Route::post('tenants/{tenant}/pause', [\App\Http\Controllers\SA\SuperAdminController::class, 'pauseTenant'])->name('admin.tenants.pause');
     Route::post('tenants/{tenant}/resume', [\App\Http\Controllers\SA\SuperAdminController::class, 'resumeTenant'])->name('admin.tenants.resume');
     Route::delete('tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('admin.tenants.destroy');
+});
+
+// Support & Profile routes (ensure these exist for topbar links)
+Route::middleware(['auth', 'tenant', 'tenant.status'])->group(function () {
+    // Support center
+    Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+
+    // Profile pages
+    Route::prefix('ui')->name('ui.')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // NEW
+    });
 });

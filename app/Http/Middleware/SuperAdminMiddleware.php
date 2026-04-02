@@ -11,9 +11,11 @@ class SuperAdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
+
         if (! $user || ! ($user->super_admin ?? false)) {
             abort(403, 'Only Super Admins can access this area.');
         }
+
         return $next($request);
     }
 }

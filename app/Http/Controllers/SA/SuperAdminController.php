@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Product;
-use App\Models\Sale;
+use App\Models\Category;
 use App\Models\Expense;
+use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -73,10 +74,29 @@ class SuperAdminController extends Controller
 
     public function destroyTenant(Tenant $tenant)
     {
-        $name = $tenant->name;
-        $tenant->delete();
-        
-        return back()->with('success', "Tenant {$name} has been deleted.");
+        // Optional guard: prevent deleting platform/root tenant
+        if ((int) $tenant->id === 1) {
+            return back()->withErrors(['error' => 'You cannot delete the root platform tenant.']);
+        }
+
+        DB::transaction(function () use ($tenant) {
+            // If your FKs are set with cascadeOnDelete, this may be unnecessary.
+            // This explicit cleanup helps if cascades are not configured everywhere.
+            User::where('tenant_id', $tenant->id)->delete();
+            Product::where('tenant_id', $tenant->id)->delete();
+            Category::where('tenant_id', $tenant->id)->delete();
+            Expense::where('tenant_id', $tenant->id)->delete();
+            Sale::where('tenant_id', $tenant->id)->delete();
+
+            $tenant->delete();
+        });
+
+        // Redirect appropriately depending on where the request came from
+        if (request()->routeIs('admin.tenants.destroy')) {
+            return redirect()->route('sa.tenants.index')->with('success', 'Company deleted.');
+        }
+
+        return back()->with('success', 'Company deleted.');
     }
 
     public function createTenant(Tenant $tenant)
