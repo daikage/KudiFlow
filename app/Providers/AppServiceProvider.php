@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Schema;
 use App\Models\TenantRolePermission;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Expense;
 use App\Models\Sale;
 use App\Services\ActivityNotifier;
+use App\Services\PlanManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,7 +28,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-       // Share permissions and super_admin flag with both sidebars
+        Schema::defaultStringLength(191);
+
+        // Share permissions and super_admin flag with both sidebars
         View::composer(['partials.sidebar', 'partials.tw.sidebar'], function ($view) {
             $user = auth()->user();
 
@@ -42,7 +46,10 @@ class AppServiceProvider extends ServiceProvider
                         ->where('role', $user->role ?? 'staff')
                         ->value('permissions') ?? []);
 
-            $view->with(compact('perm', 'super'));
+            // NEW: plan entitlements for current tenant
+            $entitled = PlanManager::entitlementsForTenant((int) $tenantId);
+
+            $view->with(compact('perm', 'super', 'entitled'));
         });
 
         // Activity notifications on new data (tenant-scoped + platform)

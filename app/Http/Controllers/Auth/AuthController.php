@@ -68,6 +68,7 @@ class AuthController extends Controller
 
         \Illuminate\Support\Facades\Auth::login($user);
 
-        return redirect()->route('ui.dashboard');
+        // NEW: send first-time users to subscription chooser
+        return redirect()->route('subscriptions.choose');
     }
 }

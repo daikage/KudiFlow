@@ -45,7 +45,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['inventory'] ?? false))
+    @if($showCompanyMenus && ($perm['inventory'] ?? false) && ($entitled['inventory'] ?? false))
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Inventory</p>
       <a href="{{ route('ui.products.index') }}"
          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
@@ -61,7 +61,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['sales'] ?? false))
+    @if($showCompanyMenus && ($perm['sales'] ?? false) && ($entitled['sales'] ?? false))
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Sales</p>
       <a href="{{ route('ui.sales.index') }}"
          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
@@ -71,7 +71,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['finance'] ?? false))
+    @if($showCompanyMenus && ($perm['finance'] ?? false) && ($entitled['finance'] ?? false))
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Finance</p>
       <a href="{{ route('ui.expenses.index') }}"
          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
@@ -81,7 +81,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['people'] ?? false))
+    @if($showCompanyMenus && ($perm['people'] ?? false) && ($entitled['people'] ?? false))
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">People</p>
       <a href="{{ route('ui.staff.index') }}"
          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
@@ -91,7 +91,7 @@
       </a>
     @endif
 
-    @if($showCompanyMenus && ($perm['admin'] ?? false))
+    @if($showCompanyMenus && ($perm['admin'] ?? false) && ($entitled['admin'] ?? false))
       <p class="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70 mt-2">Admin</p>
       <a href="{{ route('admin.roles.index') }}"
          class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group

@@ -15,6 +15,7 @@ use App\Http\Controllers\UI\SupportController;
 use App\Http\Controllers\UI\ProfileController;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UI\SubscriptionOnboardingController;
 
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
@@ -222,5 +223,13 @@ Route::middleware(['auth', 'tenant', 'tenant.status'])->group(function () {
         Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
         Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // NEW
+    });
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::prefix('ui/subscriptions')->name('subscriptions.')->group(function () {
+        Route::get('choose', [SubscriptionOnboardingController::class, 'choose'])->name('choose');
+        Route::post('start-trial', [SubscriptionOnboardingController::class, 'startTrial'])->name('start_trial');
+        Route::post('choose-plan', [SubscriptionOnboardingController::class, 'choosePlan'])->name('choose_plan');
     });
 });
