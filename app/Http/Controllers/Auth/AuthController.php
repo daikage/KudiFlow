@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Tenant;
-use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -59,29 +58,17 @@ class AuthController extends Controller
             'name' => $data['store_name'] ?: ($data['name']."'s Company"),
         ]);
 
-        // Create owner as admin of their company
         $user = \App\Models\User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => \Illuminate\Support\Facades\Hash::make($data['password']),
             'tenant_id' => $tenant->id,
-            'role' => 'admin',
-        ]);
-
-        // Create default trial subscription (5 days)
-        Subscription::create([
-            'tenant_id' => $tenant->id,
-            'plan' => 'trial',
-            'status' => 'trial',
-            'modules' => Subscription::defaultModules(),
-            'starts_at' => now(),
-            'trial_ends_at' => now()->addDays(5),
-            'ends_at' => null,
+            'role' => 'admin', // owner as admin of their company
         ]);
 
         \Illuminate\Support\Facades\Auth::login($user);
 
-        // Redirect to subscription (billing) page first
-        return redirect()->route('ui.settings.billing')->with('success', 'Welcome! Your 5-day trial has started.');
+        // NEW: send first-time users to subscription chooser
+        return redirect()->route('subscriptions.choose');
     }
 }

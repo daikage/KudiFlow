@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\TenantRolePermission;
+use App\Services\PlanManager;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +21,13 @@ class PermissionMiddleware
 
         $tenantId = app('tenant_id');
 
-        // Fetch tenant-scoped permissions for the user's role
+        // 1) Subscription / plan entitlement gate
+        if (!PlanManager::isServiceEntitled($tenantId, $module)) {
+            // 402 Payment Required is semantically correct; some apps prefer 403 + message
+            abort(402, 'Your current subscription does not include access to this feature. Please upgrade your plan.');
+        }
+
+        // 2) Role-based permissions (existing model)
         $permissions = TenantRolePermission::where('tenant_id', $tenantId)
             ->where('role', $user->role ?? 'staff')
             ->value('permissions');
