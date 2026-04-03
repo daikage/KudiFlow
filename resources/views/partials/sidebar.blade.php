@@ -36,8 +36,8 @@
 
 <aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50">
   <div class="mb-6 px-2">
-    <h1 class="text-lg font-black text-emerald-900 dark:text-emerald-500 tracking-tight">Sovereign Ledger</h1>
-    <p class="text-xs text-on-surface-variant opacity-70">Digital Estate Admin</p>
+    <h1 class="text-lg font-black text-emerald-900 dark:text-emerald-500 tracking-tight">Kudiflow</h1>
+    <p class="text-xs text-on-surface-variant opacity-70">Market Assistant</p>
   </div>
 
   <nav class="flex-1 flex flex-col gap-1">
@@ -82,6 +82,12 @@
         {{ $is('ui/expenses*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
         <span class="material-symbols-outlined">account_balance_wallet</span>
         <span class="font-medium text-sm">Expenses</span>
+      </a>
+      {{-- NEW: Forecast link (Bootstrap sidebar) --}}
+      <a href="{{ route('ui.forecast.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/forecast') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">trending_up</span>
+        <span class="font-medium text-sm">Forecast</span>
       </a>
     @endif
 

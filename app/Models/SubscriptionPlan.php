@@ -7,11 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class SubscriptionPlan extends Model
 {
     protected $fillable = [
-        'name','slug','amount','currency','interval','interval_count','trial_days','modules','active',
+        'name',
+        'code',       // e.g. basic, pro, enterprise
+        'price',      // decimal
+        'interval',   // monthly|yearly
+        'active',     // bool
+        'features',   // json: {"inventory":true,"sales":true,...}
     ];
 
     protected $casts = [
-        'modules' => 'array',
-        'active' => 'bool',
+        'price'    => 'decimal:2',
+        'active'   => 'boolean',
+        'features' => 'array',
     ];
+
+    public function scopeActive($q)
+    {
+        return $q->where('active', true);
+    }
 }

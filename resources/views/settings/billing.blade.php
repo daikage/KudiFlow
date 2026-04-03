@@ -5,13 +5,21 @@
 
 @section('content')
   @php
+    // Use the consolidated Subscription model + PlanManager. Avoid columns/methods that don't exist.
     $tenantId     = app('tenant_id');
     $subscription = \App\Models\Subscription::where('tenant_id', $tenantId)->latest('id')->first();
-    $modules      = $subscription?->modules ?? \App\Models\Subscription::defaultModules();
-    $isTrial      = $subscription?->status === 'trial';
+    $isTrial      = $subscription?->isTrialing() ?? false;
     $trialEnds    = $subscription?->trial_ends_at;
     $isActive     = $subscription?->isActive() ?? false;
-    $plans        = \App\Models\SubscriptionPlan::where('active', true)->orderBy('amount')->get();
+
+    // Entitlements for the current tenant (trial => all true, paid => per-plan)
+    $entitled     = \App\Services\PlanManager::entitlementsForTenant((int) $tenantId);
+
+    // Keep $modules alias for downstream template code that referenced it previously
+    $modules      = $entitled;
+
+    // Show real, active plans created by Super Admin
+    $plans        = \App\Models\Plan::active()->orderBy('price')->get();
   @endphp
 
   @if(session('success'))
@@ -96,7 +104,7 @@
                 <div class="flex items-start justify-between">
                   <div>
                     <h4 class="font-bold">{{ $plan->name }}</h4>
-                    <p class="text-xs text-on-surface-variant uppercase tracking-widest">{{ strtoupper($plan->currency) }} {{ number_format($plan->amount,2) }}</p>
+                    <p class="text-xs text-on-surface-variant uppercase tracking-widest">{{ strtoupper($plan->currency) }} {{ number_format($plan->price,2) }}</p>
                   </div>
                   <span class="text-[10px] font-bold px-2 py-1 rounded-full {{ $plan->active ? 'bg-primary text-on-primary' : 'bg-outline-variant/30 text-on-surface-variant' }}">
                     {{ $plan->active ? 'ACTIVE' : 'INACTIVE' }}

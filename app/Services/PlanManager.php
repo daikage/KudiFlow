@@ -2,58 +2,42 @@
 
 namespace App\Services;
 
+use App\Models\Plan;
 use App\Models\Subscription;
-use Illuminate\Support\Arr;
 
 class PlanManager
 {
-    // Centralized entitlements by plan
-    protected static array $plans = [
-        'basic' => [
-            'inventory' => true,
-            'sales'     => true,
-            'finance'   => false,
-            'people'    => false,
-            'admin'     => false,
-        ],
-        'pro' => [
-            'inventory' => true,
-            'sales'     => true,
-            'finance'   => true,
-            'people'    => true,
-            'admin'     => false,
-        ],
-        'enterprise' => [
-            'inventory' => true,
-            'sales'     => true,
-            'finance'   => true,
-            'people'    => true,
-            'admin'     => true,
-        ],
-        // Treat trial as Pro by default
-        'trial' => [
-            'inventory' => true,
-            'sales'     => true,
-            'finance'   => true,
-            'people'    => true,
-            'admin'     => false,
-        ],
-    ];
+    // Core module keys your app recognizes
+    public const MODULES = ['inventory','sales','finance','people','admin'];
 
     public static function entitlementsForTenant(int $tenantId): array
     {
         $sub = Subscription::active()->where('tenant_id', $tenantId)->latest()->first();
 
-        // Fallback to 'basic' if no subscription; adjust if you prefer stricter default
-        $plan = $sub?->plan ?: 'basic';
+        if (!$sub) {
+            return array_fill_keys(self::MODULES, false);
+        }
 
-        return self::$plans[$plan] ?? self::$plans['basic'];
+        if ($sub->isTrialing()) {
+            return array_fill_keys(self::MODULES, true);
+        }
+
+        $plan = Plan::where('code', $sub->plan)->first();
+        if ($plan && is_array($plan->entitlements)) {
+            $result = [];
+            foreach (self::MODULES as $m) {
+                $result[$m] = (bool) ($plan->entitlements[$m] ?? false);
+            }
+            return $result;
+        }
+
+        return array_fill_keys(self::MODULES, false);
     }
 
-    public static function isServiceEntitled(int $tenantId, string $service): bool
+    // NEW: quick check for trial tenants
+    public static function isTrialingTenant(int $tenantId): bool
     {
-        $entitled = self::entitlementsForTenant($tenantId);
-        return (bool) Arr::get($entitled, $service, false);
+        $sub = Subscription::where('tenant_id', $tenantId)->latest()->first();
+        return $sub?->isTrialing() ?? false;
     }
 }
-

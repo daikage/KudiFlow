@@ -4,6 +4,7 @@ namespace App\Http\Controllers\UI;
 
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 
 class SubscriptionOnboardingController extends Controller
@@ -17,18 +18,15 @@ class SubscriptionOnboardingController extends Controller
             return redirect()->route('ui.dashboard');
         }
 
-        // If tenant already has any subscription, proceed to dashboard
         $tenantId = (int) $user->tenant_id;
-        if (Subscription::where('tenant_id', $tenantId)->exists()) {
+
+        // If already has an active subscription, proceed
+        if (Subscription::active()->where('tenant_id', $tenantId)->exists()) {
             return redirect()->route('ui.dashboard');
         }
 
-        // Show subscription selection (trial + plans)
-        $plans = [
-            'basic' => ['label' => 'Basic', 'price' => '₦0.00 (stub)'],
-            'pro' => ['label' => 'Pro', 'price' => '₦0.00 (stub)'],
-            'enterprise' => ['label' => 'Enterprise', 'price' => '₦0.00 (stub)'],
-        ];
+        // LOAD REAL PLANS created by Super Admin
+        $plans = Plan::active()->orderBy('sort')->orderBy('price')->get(['id','code','name','price','interval','entitlements','status']);
 
         return view('subscriptions.choose', compact('plans'));
     }
@@ -42,7 +40,8 @@ class SubscriptionOnboardingController extends Controller
 
         $tenantId = (int) $user->tenant_id;
 
-        // Create a 14-day trial subscription (stub)
+        // End any previous non-active records (optional clean up)
+        // Create 14-day trial
         Subscription::create([
             'tenant_id'     => $tenantId,
             'plan'          => 'trial',
@@ -52,13 +51,13 @@ class SubscriptionOnboardingController extends Controller
             'ends_at'       => null,
         ]);
 
-        return redirect()->route('ui.dashboard')->with('success', 'Your 14-day trial has started.');
+        return redirect()->route('ui.dashboard')->with('success', 'Your 14-day trial has started. All features are unlocked during the trial.');
     }
 
     public function choosePlan(Request $request)
     {
         $data = $request->validate([
-            'plan' => ['required', 'in:basic,pro,enterprise'],
+            'plan' => ['required', 'string'], // plan code
         ]);
 
         $user = $request->user();
@@ -68,16 +67,18 @@ class SubscriptionOnboardingController extends Controller
 
         $tenantId = (int) $user->tenant_id;
 
-        // Create an active subscription record (stub: no billing integration yet)
+        // Verify the plan exists and is active
+        $plan = Plan::active()->where('code', $data['plan'])->firstOrFail();
+
+        // Create an active subscription record
         Subscription::create([
             'tenant_id' => $tenantId,
-            'plan'      => $data['plan'],
+            'plan'      => $plan->code,
             'status'    => 'active',
-            'renews_at' => now()->addMonth(),
+            'renews_at' => now()->addMonth(), // placeholder for monthly billing
             'ends_at'   => null,
         ]);
 
         return redirect()->route('ui.dashboard')->with('success', 'Subscription activated.');
     }
 }
-

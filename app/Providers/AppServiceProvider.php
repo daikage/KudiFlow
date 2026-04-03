@@ -12,6 +12,8 @@ use App\Models\Expense;
 use App\Models\Sale;
 use App\Services\ActivityNotifier;
 use App\Services\PlanManager;
+use App\Contracts\ForecastProvider;
+use App\Services\Forecast\Providers\OpenAiForecaster;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +22,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Bind the forecast provider based on config, fallback to a null binding to keep baseline
+        $driver = config('ai.forecast.driver', 'baseline');
+
+        if ($driver === 'openai' && config('ai.forecast.openai.api_key')) {
+            $this->app->singleton(ForecastProvider::class, function () {
+                return new OpenAiForecaster();
+            });
+        } else {
+            // Bind to a no-op provider so app(ForecastProvider::class) exists but returns []
+            $this->app->singleton(ForecastProvider::class, function () {
+                return new class implements \App\Contracts\ForecastProvider {
+                    public function forecast(array $context): array { return []; }
+                };
+            });
+        }
     }
 
     /**
@@ -48,6 +64,11 @@ class AppServiceProvider extends ServiceProvider
 
             // NEW: plan entitlements for current tenant
             $entitled = PlanManager::entitlementsForTenant((int) $tenantId);
+
+            // NEW: If tenant is on trial (and not super admin), force all perms to true so menus appear
+            if (!$super && PlanManager::isTrialingTenant((int) $tenantId)) {
+                $perm = array_fill_keys(PlanManager::MODULES, true);
+            }
 
             $view->with(compact('perm', 'super', 'entitled'));
         });

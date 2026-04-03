@@ -11,11 +11,10 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('plan')->default('trial'); // trial|basic|pro|enterprise
-            $table->string('status')->default('trial'); // trial|active|canceled|expired
-            $table->json('modules')->nullable(); // e.g. {"inventory":true,"sales":true,"finance":false,"people":false,"analytics":false}
-            $table->timestamp('starts_at')->nullable();
+            $table->string('status')->default('active'); // active|trialing|canceled|past_due|paused
             $table->timestamp('trial_ends_at')->nullable();
-            $table->timestamp('ends_at')->nullable(); // paid plan end date if any
+            $table->timestamp('renews_at')->nullable();
+            $table->timestamp('ends_at')->nullable();
             $table->timestamps();
 
             $table->index(['tenant_id', 'status']);

@@ -13,25 +13,25 @@ class EnsureSubscriptionSelected
     {
         $user = $request->user();
 
-        // Only enforce for authenticated, non-super-admin users inside the app area
+        // Unauthenticated or Super Admin are not blocked
         if (!$user || ($user->super_admin ?? false)) {
             return $next($request);
         }
 
-        // Only enforce on UI area, and skip the subscription pages themselves
+        // Only enforce inside UI area and skip the chooser routes themselves
         if (! $request->is('ui/*') || $request->is('ui/subscriptions*')) {
             return $next($request);
         }
 
-        // First-time rule: If tenant has NO subscription at all, force selection
         $tenantId = (int) $user->tenant_id;
-        $hasAnySubscription = Subscription::where('tenant_id', $tenantId)->exists();
 
-        if (! $hasAnySubscription) {
+        // Must have an ACTIVE subscription (trialing or active). If none, force chooser.
+        $hasActive = Subscription::active()->where('tenant_id', $tenantId)->exists();
+
+        if (! $hasActive) {
             return redirect()->route('subscriptions.choose');
         }
 
         return $next($request);
     }
 }
-

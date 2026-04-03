@@ -1,6 +1,6 @@
 @extends('layouts.tailwind')
 
-@section('title', 'Sales POS - The Sovereign Ledger')
+@section('title', 'Sales POS - Kudiflow')
 @section('search_placeholder', 'Search products (SKU or name)...')
 @section('main_classes', 'p-8 w-full') {{-- POS needs full width, not centered container --}}
 

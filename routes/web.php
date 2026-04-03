@@ -16,6 +16,8 @@ use App\Http\Controllers\UI\ProfileController;
 use App\Http\Middleware\SuperAdminMiddleware;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UI\SubscriptionOnboardingController;
+use App\Http\Controllers\SA\SubscriptionsController;
+use App\Http\Controllers\UI\ForecastController;
 
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
@@ -149,22 +151,6 @@ Route::prefix('ui')->middleware(['auth', \App\Http\Middleware\TenantMiddleware::
     Route::post('/admin/roles', [\App\Http\Controllers\UI\Admin\RolePermissionController::class, 'update'])
         ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':admin')
         ->name('admin.roles.update');
-
-    // Support & Profile
-    Route::get('/support', [\App\Http\Controllers\UI\SupportController::class, 'index'])->name('support.index');
-    Route::get('/profile', [\App\Http\Controllers\UI\ProfileController::class, 'show'])->name('profile.show');
-    Route::get('/profile/edit', [\App\Http\Controllers\UI\ProfileController::class, 'edit'])->name('profile.edit');
-
-    // [ADD] Settings routes (fixes: Route [settings.general] not defined)
-    Route::get('/settings/general', [\App\Http\Controllers\UI\SettingsController::class, 'general'])
-        ->name('settings.general');
-
-    Route::get('/settings/billing', [\App\Http\Controllers\UI\SettingsController::class, 'billing'])
-        ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':admin') // restrict if needed
-        ->name('settings.billing');
-
-    Route::get('/settings/notifications', [\App\Http\Controllers\UI\SettingsController::class, 'notifications'])
-        ->name('settings.notifications');
 });
 
 // Super Admin (Platform) routes
@@ -213,23 +199,56 @@ Route::prefix('admin')->middleware(['auth', 'superadmin'])->group(function() {
     Route::delete('tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])->name('admin.tenants.destroy');
 });
 
-// Support & Profile routes (ensure these exist for topbar links)
-Route::middleware(['auth', 'tenant', 'tenant.status'])->group(function () {
-    // Support center
+Route::middleware(['auth','tenant','tenant.status'])->prefix('ui')->name('ui.')->group(function () {
+    // Settings pages
+    Route::get('/settings/general', [SettingsController::class, 'general'])->name('settings.general');
+    Route::get('/settings/billing', [SettingsController::class, 'billing'])->name('settings.billing');
+    Route::get('/settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
+
+    // FIX: add missing route for the General settings form action
+    Route::post('/settings/general', [SettingsController::class, 'updateGeneral'])->name('settings.general.update');
+
+    // Profile
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Support
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
 
-    // Profile pages
-    Route::prefix('ui')->name('ui.')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
-        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update'); // NEW
-    });
+    // Notifications (used by topbar and modal)
+    Route::get('/notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read_all');
+
+    // Ensure Billing page route exists (redirect target after upgrade)
+    Route::get('/settings/billing', [SettingsController::class, 'billing'])->name('settings.billing');
+
+    // NEW: Upgrade endpoint used by the billing view’s form (keeps current design intact)
+    Route::post('/billing/upgrade', [SettingsController::class, 'upgrade'])->name('billing.upgrade');
+
+    // Forecast (gated by finance module permissions; during trial it's auto-unlocked by your middleware)
+    Route::get('/forecast', [ForecastController::class, 'index'])
+        ->middleware('perm:finance')
+        ->name('forecast.index');
 });
 
-Route::middleware(['auth'])->group(function () {
-    Route::prefix('ui/subscriptions')->name('subscriptions.')->group(function () {
-        Route::get('choose', [SubscriptionOnboardingController::class, 'choose'])->name('choose');
-        Route::post('start-trial', [SubscriptionOnboardingController::class, 'startTrial'])->name('start_trial');
-        Route::post('choose-plan', [SubscriptionOnboardingController::class, 'choosePlan'])->name('choose_plan');
-    });
+Route::middleware(['auth'])->prefix('ui/subscriptions')->name('subscriptions.')->group(function () {
+    Route::get('choose', [SubscriptionOnboardingController::class, 'choose'])->name('choose');
+    Route::post('start-trial', [SubscriptionOnboardingController::class, 'startTrial'])->name('start_trial');
+    Route::post('choose-plan', [SubscriptionOnboardingController::class, 'choosePlan'])->name('choose_plan');
 });
+
+Route::middleware(['auth','sa'])->prefix('sa')->name('sa.')->group(function () {
+    // Subscriptions (Plan catalog) management
+    Route::get('/subscriptions', [SubscriptionsController::class, 'index'])->name('subscriptions.index');
+    Route::get('/subscriptions/plans/create', [SubscriptionsController::class, 'create'])->name('subscriptions.create');
+    Route::post('/subscriptions/plans', [SubscriptionsController::class, 'store'])->name('subscriptions.store');
+    Route::get('/subscriptions/plans/{plan}/edit', [SubscriptionsController::class, 'edit'])->name('subscriptions.edit');
+    Route::put('/subscriptions/plans/{plan}', [SubscriptionsController::class, 'update'])->name('subscriptions.update');
+    Route::delete('/subscriptions/plans/{plan}', [SubscriptionsController::class, 'destroy'])->name('subscriptions.destroy');
+});
+
+// Alias expected by the sidebar: route('support.index') without the "ui." prefix
+Route::middleware(['auth','tenant','tenant.status'])
+    ->get('/support', [SupportController::class, 'index'])
+    ->name('support.index');

@@ -14,25 +14,29 @@ class PermissionMiddleware
     {
         $user = $request->user();
 
-        // Super admin bypass: access to all modules/companies
+        // Super admin bypass
         if ($user && ($user->super_admin ?? false)) {
             return $next($request);
         }
 
-        $tenantId = app('tenant_id');
+        $tenantId = (int) app('tenant_id');
 
-        // 1) Subscription / plan entitlement gate
-        if (!PlanManager::isServiceEntitled($tenantId, $module)) {
-            // 402 Payment Required is semantically correct; some apps prefer 403 + message
-            abort(402, 'Your current subscription does not include access to this feature. Please upgrade your plan.');
+        // NEW: During trial, grant full access (menus and routes)
+        if (PlanManager::isTrialingTenant($tenantId)) {
+            return $next($request);
         }
 
-        // 2) Role-based permissions (existing model)
+        // Plan entitlement gate first
+        if (!PlanManager::isServiceEntitled($tenantId, $module)) {
+            abort(402, 'Your current subscription does not include access to this feature.');
+        }
+
+        // Role-based permissions next
         $permissions = TenantRolePermission::where('tenant_id', $tenantId)
             ->where('role', $user->role ?? 'staff')
             ->value('permissions');
 
-        $allowed = is_array($permissions) && !empty($permissions[$module]) && $permissions[$module] === true;
+        $allowed = is_array($permissions) && (($permissions[$module] ?? false) === true);
 
         if (!$allowed) {
             abort(403, 'You do not have permission to access this module.');

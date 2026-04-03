@@ -3,57 +3,92 @@
 namespace App\Http\Controllers\SA;
 
 use App\Http\Controllers\Controller;
-use App\Models\SubscriptionPlan;
+use App\Models\Plan;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 
 class SubscriptionsController extends Controller
 {
     public function index()
     {
-        $plans = SubscriptionPlan::orderBy('active', 'desc')->orderBy('amount')->get();
-
+        $plans = Plan::orderBy('sort')->orderBy('price')->get();
         return view('sa.subscriptions.index', compact('plans'));
     }
 
-    public function storePlan(Request $request)
+    public function create()
     {
-        $data = $request->validate([
-            'name' => ['required','string','max:100'],
-            'slug' => ['nullable','string','max:50', Rule::unique('subscription_plans','slug')],
-            'amount' => ['required','numeric','min:0'],
-            'currency' => ['required','string','size:3'],
-            'interval' => ['required','in:monthly,yearly,lifetime'],
-            'interval_count' => ['required','integer','min:1'],
-            'trial_days' => ['nullable','integer','min:0'],
-            'modules' => ['array'],
-            'modules.*' => ['boolean'],
-            'active' => ['nullable','boolean'],
-        ]);
-
-        $slug = $data['slug'] ?: Str::slug($data['name']);
-        $modules = $data['modules'] ?? [];
-
-        SubscriptionPlan::create([
-            'name' => $data['name'],
-            'slug' => $slug,
-            'amount' => $data['amount'],
-            'currency' => strtoupper($data['currency']),
-            'interval' => $data['interval'],
-            'interval_count' => $data['interval_count'],
-            'trial_days' => $data['trial_days'] ?? 0,
-            'modules' => $modules,
-            'active' => (bool)($data['active'] ?? true),
-        ]);
-
-        return back()->with('success', 'Plan created.');
+        $modules = ['inventory','sales','finance','people','admin'];
+        return view('sa.subscriptions.create', compact('modules'));
     }
 
-    public function destroyPlan(SubscriptionPlan $plan)
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'code'   => ['required','string','max:64','alpha_dash','unique:plans,code'],
+            'name'   => ['required','string','max:255'],
+            'price'  => ['required','numeric','min:0'],
+            'interval' => ['required','in:monthly,yearly'],
+            'status' => ['required','in:active,inactive'],
+            'sort'   => ['nullable','integer','min:0'],
+            'entitlements' => ['array'],
+        ]);
+
+        $modules = ['inventory','sales','finance','people','admin'];
+        $entitlements = [];
+        foreach ($modules as $m) {
+            $entitlements[$m] = (bool) ($data['entitlements'][$m] ?? false);
+        }
+
+        Plan::create([
+            'code' => $data['code'],
+            'name' => $data['name'],
+            'price' => $data['price'],
+            'interval' => $data['interval'],
+            'status' => $data['status'],
+            'sort' => $data['sort'] ?? 0,
+            'entitlements' => $entitlements,
+        ]);
+
+        return redirect()->route('sa.subscriptions.index')->with('success', 'Plan created.');
+    }
+
+    public function edit(Plan $plan)
+    {
+        $modules = ['inventory','sales','finance','people','admin'];
+        return view('sa.subscriptions.edit', compact('plan','modules'));
+    }
+
+    public function update(Request $request, Plan $plan)
+    {
+        $data = $request->validate([
+            'name'   => ['required','string','max:255'],
+            'price'  => ['required','numeric','min:0'],
+            'interval' => ['required','in:monthly,yearly'],
+            'status' => ['required','in:active,inactive'],
+            'sort'   => ['nullable','integer','min:0'],
+            'entitlements' => ['array'],
+        ]);
+
+        $modules = ['inventory','sales','finance','people','admin'];
+        $entitlements = [];
+        foreach ($modules as $m) {
+            $entitlements[$m] = (bool) ($data['entitlements'][$m] ?? false);
+        }
+
+        $plan->update([
+            'name' => $data['name'],
+            'price' => $data['price'],
+            'interval' => $data['interval'],
+            'status' => $data['status'],
+            'sort' => $data['sort'] ?? 0,
+            'entitlements' => $entitlements,
+        ]);
+
+        return redirect()->route('sa.subscriptions.index')->with('success', 'Plan updated.');
+    }
+
+    public function destroy(Plan $plan)
     {
         $plan->delete();
-
-        return back()->with('success', 'Plan deleted.');
+        return redirect()->route('sa.subscriptions.index')->with('success', 'Plan deleted.');
     }
 }

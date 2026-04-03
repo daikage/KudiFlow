@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        // Guard against duplicate creation when an earlier migration already created the table
+        if (Schema::hasTable('subscriptions')) {
+            return;
+        }
+
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>@yield('title', 'The Sovereign Ledger')</title>
+  <title>@yield('title', 'The Kudiflow')</title>
 
   <!-- Tailwind + Plugins -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
