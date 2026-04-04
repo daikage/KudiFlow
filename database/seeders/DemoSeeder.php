@@ -27,6 +27,7 @@ class DemoSeeder extends Seeder
         ], [
             'category_id' => $cat->id,
             'name' => 'Super Malt (330ml)',
+            'barcode' => '0123456789012', // NEW: sample barcode for scanning
             'price' => 450,
             'cost' => 300,
             'stock' => 24,

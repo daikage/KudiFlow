@@ -21,6 +21,7 @@ use App\Http\Controllers\UI\ForecastController;
 use App\Http\Controllers\Webhook\PaymentWebhookController;
 use App\Http\Controllers\UI\PosController;
 
+
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
 
@@ -240,16 +241,6 @@ Route::middleware(['auth','tenant','tenant.status'])->prefix('ui')->name('ui.')-
     Route::get('/pos', [PosController::class, 'index'])->middleware('perm:sales')->name('pos.index');
     Route::get('/pos/lookup', [PosController::class, 'lookup'])->middleware('perm:sales')->name('pos.lookup');
     Route::post('/pos/checkout', [PosController::class, 'checkout'])->middleware('perm:sales')->name('pos.checkout');
-
-    // POS (barcode scanning) - gated by sales permissions
-    Route::prefix('pos')->middleware('perm:sales')->name('pos.')->group(function () {
-        Route::get('/', [POSController::class, 'index'])->name('index');
-        Route::post('/scan', [POSController::class, 'scan'])->name('scan');        // scan by barcode or SKU
-        Route::post('/add', [POSController::class, 'add'])->name('add');           // add product to cart
-        Route::post('/update', [POSController::class, 'update'])->name('update');  // update qty
-        Route::post('/remove', [POSController::class, 'remove'])->name('remove');  // remove item
-        Route::post('/checkout', [POSController::class, 'checkout'])->name('checkout'); // finalize sale
-    });
 });
 
 Route::middleware(['auth'])->prefix('ui/subscriptions')->name('subscriptions.')->group(function () {
@@ -272,6 +263,19 @@ Route::middleware(['auth','sa'])->prefix('sa')->name('sa.')->group(function () {
 Route::middleware(['auth','tenant','tenant.status'])
     ->get('/support', [SupportController::class, 'index'])
     ->name('support.index');
+
+// POS routes (Sales permission)
+Route::middleware(['auth', 'tenant', 'tenant.status', 'perm:sales'])
+    ->prefix('ui/pos')
+    ->name('ui.pos.')
+    ->group(function () {
+        Route::get('/', [PosController::class, 'index'])->name('index');
+        Route::post('/scan', [PosController::class, 'scan'])->name('scan');
+        Route::post('/add', [PosController::class, 'add'])->name('add');
+        Route::post('/update', [PosController::class, 'update'])->name('update');
+        Route::post('/remove', [PosController::class, 'remove'])->name('remove');
+        Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
+    });
 
 // Public webhooks (no auth, CSRF exempted)
 Route::post('/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])->name('webhooks.paystack');

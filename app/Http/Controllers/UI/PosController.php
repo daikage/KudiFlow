@@ -10,7 +10,7 @@ use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class POSController extends Controller
+class PosController extends Controller
 {
     public function index(Request $request)
     {
@@ -32,6 +32,7 @@ class POSController extends Controller
         $product = Product::where('tenant_id', $tenantId)
             ->where('status', 'active')
             ->where(function ($q) use ($data) {
+                // Try barcode first if present, fallback to SKU
                 $q->where('barcode', $data['code'])
                   ->orWhere('sku', $data['code']);
             })
@@ -167,4 +168,3 @@ class POSController extends Controller
         return response()->json(['ok' => true, 'message' => 'Sale completed.']);
     }
 }
-

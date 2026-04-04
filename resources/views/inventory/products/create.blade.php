@@ -24,6 +24,12 @@
           <input name="sku" value="{{ old('sku') }}" class="w-full bg-surface-container-low border @error('sku') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="e.g. PEP-50">
           @error('sku')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
         </div>
+        <!-- NEW: Barcode -->
+        <div>
+          <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Barcode (optional)</label>
+          <input name="barcode" value="{{ old('barcode') }}" class="w-full bg-surface-container-low border @error('barcode') border-error @else border-outline-variant/30 @enderror rounded-lg px-3 py-2" placeholder="EAN-13/Code-128">
+          @error('barcode')<p class="text-error text-xs mt-1">{{ $message }}</p>@enderror
+        </div>
         <div>
           <label class="block text-[12px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Category</label>
           <select name="category_id" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2">

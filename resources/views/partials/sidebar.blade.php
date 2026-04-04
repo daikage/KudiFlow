@@ -73,6 +73,12 @@
         <span class="material-symbols-outlined">receipt_long</span>
         <span class="font-medium text-sm">Sales Ledger</span>
       </a>
+      {{-- NEW: POS entry --}}
+      <a href="{{ route('ui.pos.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-lg transition-all group
+        {{ $is('ui/pos*') ? 'bg-white dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-400 shadow-sm font-semibold translate-x-1' : 'text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800' }}">
+        <span class="material-symbols-outlined">point_of_sale</span>
+        <span class="font-medium text-sm">Point of Sale</span>
+      </a>
     @endif
 
     @if($showCompanyMenus && ($perm['finance'] ?? false))
