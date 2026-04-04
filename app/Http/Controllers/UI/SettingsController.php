@@ -8,6 +8,9 @@ use Illuminate\Validation\Rule;
 use App\Models\Tenant;
 use App\Models\Plan;
 use App\Models\Subscription;
+use App\Models\Payment;
+use App\Services\Payments\PaymentService;
+use App\Services\Subscriptions\SubscriptionActivator;
 
 class SettingsController extends Controller
 {
@@ -15,72 +18,61 @@ class SettingsController extends Controller
     public function billing() { return view('settings.billing'); }
     public function notifications() { return view('settings.notifications'); }
 
-    // [NEW] Update basic company settings
-    public function updateGeneral(Request $request)
-    {
-        $tenant = Tenant::findOrFail((int) app('tenant_id'));
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'subdomain' => [
-                'nullable',
-                'string',
-                'max:100',
-                'alpha_dash',
-                Rule::unique('tenants', 'subdomain')->ignore($tenant->id),
-            ],
-        ]);
-
-        $tenant->update([
-            'name' => $data['name'],
-            'subdomain' => $data['subdomain'] ?? null,
-        ]);
-
-        return back()->with('success', 'General settings updated.');
-    }
-
-    // NEW: Handle Upgrade / Switch Plan from the Billing page
+    // Start checkout for selected plan (keeps existing form design)
     public function upgrade(Request $request)
     {
-        // Support both payloads: {plan_id} (from current design) OR {plan} (plan code)
         $request->validate([
-            'plan_id' => ['nullable', 'integer'],
-            'plan'    => ['nullable', 'string'],
+            'plan_id' => ['nullable', 'integer', 'exists:plans,id'],
+            'plan'    => ['nullable', 'string', Rule::exists('plans','code')->where('status','active')],
         ]);
 
-        // Resolve plan: prefer plan_id if present, otherwise look up by code
+        // Resolve selected plan: prefer plan_id
         $plan = null;
         if ($request->filled('plan_id')) {
-            $plan = Plan::where('status', 'active')->findOrFail((int) $request->input('plan_id'));
+            $plan = Plan::where('status','active')->findOrFail((int) $request->plan_id);
         } elseif ($request->filled('plan')) {
-            $plan = Plan::where('status', 'active')->where('code', $request->input('plan'))->firstOrFail();
+            $plan = Plan::where('status','active')->where('code', $request->plan)->firstOrFail();
         } else {
             return back()->withErrors(['plan' => 'Please select a valid plan.']);
         }
 
         $tenantId = (int) app('tenant_id');
+        $user = $request->user();
 
-        // Cancel existing active or trial subs for this tenant
-        Subscription::where('tenant_id', $tenantId)
-            ->whereIn('status', ['active', 'trial', 'trialing'])
-            ->update([
-                'status'  => 'canceled',
-                'ends_at' => now(),
-            ]);
+        try {
+            $init = PaymentService::initCheckout($tenantId, (int) $user->id, $user->email, $plan);
+            return redirect()->away($init['redirect']);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['error' => 'Could not start payment: '.$e->getMessage()]);
+        }
+    }
 
-        // Compute renewal based on plan interval (monthly | yearly)
-        $renewsAt = $plan->interval === 'yearly' ? now()->addYear() : now()->addMonth();
+    // Callback/return URL from gateway
+    public function billingCallback(Request $request)
+    {
+        $driver = config('payments.driver', 'paystack');
 
-        // Create new active subscription for selected plan
-        Subscription::create([
-            'tenant_id'     => $tenantId,
-            'plan'          => $plan->code,
-            'status'        => 'active',
-            'trial_ends_at' => null,
-            'renews_at'     => $renewsAt,
-            'ends_at'       => null,
-        ]);
+        // Locate payment by reference/tx_ref from query
+        $reference = $request->input('reference') ?: $request->input('trxref') ?: $request->input('tx_ref');
+        if (!$reference) {
+            return redirect()->route('ui.settings.billing')->withErrors(['error' => 'Missing payment reference.']);
+        }
 
-        return redirect()->route('ui.settings.billing')->with('success', 'Subscription upgraded to '.$plan->name.'.');
+        $payment = Payment::where('reference', $reference)->first();
+        if (!$payment) {
+            return redirect()->route('ui.settings.billing')->withErrors(['error' => 'Payment not found.']);
+        }
+
+        // Verify with provider
+        $result = PaymentService::verifyAndFinalize($driver, $payment, $request->all());
+
+        if (!($result['success'] ?? false)) {
+            return redirect()->route('ui.settings.billing')->withErrors(['error' => 'Payment verification failed.']);
+        }
+
+        // Reuse activator
+        SubscriptionActivator::activate($payment->tenant_id, $payment->plan_code);
+
+        return redirect()->route('ui.settings.billing')->with('success', 'Subscription activated successfully.');
     }
 }

@@ -9,6 +9,8 @@ use App\Models\SaleItem;
 use App\Models\Expense;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+// NEW: optional AI/baseline forecast insights
+use App\Services\ForecastService;
 
 class DashboardController extends Controller
 {
@@ -103,7 +105,73 @@ class DashboardController extends Controller
             ->whereBetween(DB::raw('COALESCE(`date`, `created_at`)'), [now()->startOfMonth(), now()->endOfMonth()])
             ->sum('amount');
 
-        // Pass to view
+        // NEW: Smart Insights
+        $hasSales = Sale::where('tenant_id', $tenantId)->exists();
+        $insights = [];
+
+        if ($hasSales) {
+            // Fastest seller in last 7 days
+            $since7 = Carbon::today()->subDays(6)->toDateString();
+            $fastSeller7d = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->join('products', 'sale_items.product_id', '=', 'products.id')
+                ->where('sales.tenant_id', $tenantId)
+                ->whereDate('sales.created_at', '>=', $since7)
+                ->groupBy('products.id', 'products.name')
+                ->selectRaw('products.name as name, SUM(sale_items.qty) as units')
+                ->orderByDesc('units')
+                ->first();
+
+            if ($fastSeller7d) {
+                $insights[] = "Fastest seller (7d): {$fastSeller7d->name} ({$fastSeller7d->units} units)";
+            }
+
+            // Slow movers: stock > 0 and no sales in last 30 days
+            $since30 = Carbon::today()->subDays(29)->toDateString();
+            $soldProductIds = DB::table('sale_items')
+                ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sales.tenant_id', $tenantId)
+                ->whereDate('sales.created_at', '>=', $since30)
+                ->pluck('sale_items.product_id')
+                ->unique()
+                ->all();
+
+            $slowMovers = Product::where('tenant_id', $tenantId)
+                ->where('stock', '>', 0)
+                ->when(!empty($soldProductIds), fn($q) => $q->whereNotIn('id', $soldProductIds))
+                ->orderByDesc('stock')
+                ->take(3)
+                ->get(['name','stock']);
+
+            if ($slowMovers->isNotEmpty()) {
+                $list = $slowMovers->map(fn($p) => "{$p->name} (stock {$p->stock})")->implode(', ');
+                $insights[] = "Slow movers (30d): ".$list;
+            }
+
+            // Reorder suggestions (reuse lowStock list)
+            if ($lowStock->isNotEmpty()) {
+                $list = $lowStock->map(fn($p) => "{$p->name} (stock {$p->stock})")->implode(', ');
+                $insights[] = "Reorder suggested: ".$list;
+            }
+
+            // Optional AI/baseline price movement highlight (uses ForecastService)
+            try {
+                $f = ForecastService::forecastForTenant((int) $tenantId);
+                $rising = collect($f['products'] ?? [])
+                    ->filter(fn($p) => $p['price_now'] !== null && $p['price_30d'] !== null && $p['price_30d'] > $p['price_now'] * 1.05)
+                    ->sortByDesc(fn($p) => $p['price_30d'] - $p['price_now'])
+                    ->take(1)
+                    ->first();
+
+                if ($rising) {
+                    $delta = round($rising['price_30d'] - $rising['price_now'], 2);
+                    $insights[] = "Projected price rise: {$rising['name']} +₦{$delta} in 30 days.";
+                }
+            } catch (\Throwable $e) {
+                // ignore forecasting errors
+            }
+        }
+
         return view('dashboard.index', [
             'profitToday'     => $profitToday,
             'deltaPercent'    => $deltaPercent,
@@ -116,6 +184,9 @@ class DashboardController extends Controller
             'recentSales'     => $recentSales,
             'inventoryValue'  => $inventoryValue,
             'expensesMTD'     => $expensesMTD,
+            // NEW
+            'hasSales'        => $hasSales,
+            'insights'        => $insights,
         ]);
     }
 }

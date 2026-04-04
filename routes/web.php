@@ -18,6 +18,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UI\SubscriptionOnboardingController;
 use App\Http\Controllers\SA\SubscriptionsController;
 use App\Http\Controllers\UI\ForecastController;
+use App\Http\Controllers\Webhook\PaymentWebhookController;
+use App\Http\Controllers\UI\PosController;
 
 // Landing
 Route::redirect('/', '/ui/dashboard')->name('home');
@@ -230,6 +232,24 @@ Route::middleware(['auth','tenant','tenant.status'])->prefix('ui')->name('ui.')-
     Route::get('/forecast', [ForecastController::class, 'index'])
         ->middleware('perm:finance')
         ->name('forecast.index');
+
+    // Billing callback route added
+    Route::get('/billing/callback', [SettingsController::class, 'billingCallback'])->name('billing.callback');
+
+    // POS (Sales) - gated by sales permission, unlocked during trial by middleware
+    Route::get('/pos', [PosController::class, 'index'])->middleware('perm:sales')->name('pos.index');
+    Route::get('/pos/lookup', [PosController::class, 'lookup'])->middleware('perm:sales')->name('pos.lookup');
+    Route::post('/pos/checkout', [PosController::class, 'checkout'])->middleware('perm:sales')->name('pos.checkout');
+
+    // POS (barcode scanning) - gated by sales permissions
+    Route::prefix('pos')->middleware('perm:sales')->name('pos.')->group(function () {
+        Route::get('/', [POSController::class, 'index'])->name('index');
+        Route::post('/scan', [POSController::class, 'scan'])->name('scan');        // scan by barcode or SKU
+        Route::post('/add', [POSController::class, 'add'])->name('add');           // add product to cart
+        Route::post('/update', [POSController::class, 'update'])->name('update');  // update qty
+        Route::post('/remove', [POSController::class, 'remove'])->name('remove');  // remove item
+        Route::post('/checkout', [POSController::class, 'checkout'])->name('checkout'); // finalize sale
+    });
 });
 
 Route::middleware(['auth'])->prefix('ui/subscriptions')->name('subscriptions.')->group(function () {
@@ -252,3 +272,7 @@ Route::middleware(['auth','sa'])->prefix('sa')->name('sa.')->group(function () {
 Route::middleware(['auth','tenant','tenant.status'])
     ->get('/support', [SupportController::class, 'index'])
     ->name('support.index');
+
+// Public webhooks (no auth, CSRF exempted)
+Route::post('/webhooks/paystack', [PaymentWebhookController::class, 'paystack'])->name('webhooks.paystack');
+Route::post('/webhooks/flutterwave', [PaymentWebhookController::class, 'flutterwave'])->name('webhooks.flutterwave');

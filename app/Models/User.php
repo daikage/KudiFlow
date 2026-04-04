@@ -25,5 +25,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'super_admin' => 'boolean',
+        'password' => 'hashed', // auto-hash on set
     ];
 }

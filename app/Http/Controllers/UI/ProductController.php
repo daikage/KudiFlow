@@ -7,6 +7,7 @@ use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use App\Services\PlanManager;
 
 class ProductController extends Controller
 {
@@ -33,8 +34,18 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
+        // NEW: plan limit check for products
+        $tenantId = (int) app('tenant_id');
+        $limits = PlanManager::limitsForTenant($tenantId);
+        $current = Product::where('tenant_id', $tenantId)->count();
+        if ($current >= ($limits['products'] ?? PHP_INT_MAX)) {
+            return back()
+                ->withErrors(['error' => 'You have reached your product limit for your current plan. Please upgrade to add more products.'])
+                ->withInput();
+        }
+
         $data = $request->validated();
-        $data['tenant_id'] = app('tenant_id');
+        $data['tenant_id'] = $tenantId;
         Product::create($data);
 
         return redirect()->route('ui.products.index')->with('success', 'Product created.');

@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Support\Facades\DB;
+// NEW
+use App\Services\PlanManager;
 
 class SalesController extends Controller
 {
@@ -27,16 +29,32 @@ class SalesController extends Controller
     {
         $tenantId = app('tenant_id');
 
+        // NEW: plan limit check for monthly sales count
+        $limits = PlanManager::limitsForTenant((int) $tenantId);
+        $salesThisMonth = Sale::where('tenant_id', $tenantId)
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+        if ($salesThisMonth >= ($limits['monthly_sales'] ?? PHP_INT_MAX)) {
+            return back()
+                ->withErrors(['error' => 'You have reached your monthly sales limit for your current plan. Please upgrade to record more sales.'])
+                ->withInput();
+        }
+
         DB::transaction(function () use ($request, $tenantId) {
-            $product = Product::where('tenant_id', $tenantId)->findOrFail($request->product_id);
+            $product = Product::where('tenant_id', $tenantId)->lockForUpdate()->findOrFail($request->product_id);
 
             $qty = (int) $request->qty;
+
+            // NEW: stock guard
+            if ($product->stock < $qty) {
+                abort(422, 'Insufficient stock for '.$product->name.'. Available: '.$product->stock);
+            }
+
             $price = (float) $product->price;
             $subtotal = $price * $qty;
             $tax = 0;
             $total = $subtotal + $tax;
 
-            // Create sale
             $sale = Sale::create([
                 'tenant_id' => $tenantId,
                 'subtotal' => $subtotal,
@@ -46,7 +64,6 @@ class SalesController extends Controller
                 'status' => 'completed',
             ]);
 
-            // Create item
             SaleItem::create([
                 'sale_id' => $sale->id,
                 'product_id' => $product->id,
@@ -55,7 +72,6 @@ class SalesController extends Controller
                 'total' => $subtotal,
             ]);
 
-            // Decrement stock
             $product->decrement('stock', $qty);
         });
 

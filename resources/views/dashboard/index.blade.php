@@ -178,4 +178,25 @@
       </div>
     </div>
   </section>
+
+  {{-- NEW: Smart Insight panel --}}
+  <div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/5 mt-6">
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-lg font-bold">Smart Insight</h3>
+    </div>
+
+    @if(!$hasSales)
+      <p class="text-sm text-on-surface-variant">Make your first sale to unlock tailored insights.</p>
+    @else
+      @if(empty($insights))
+        <p class="text-sm text-on-surface-variant">We’re crunching the numbers. Check back soon for tailored insights.</p>
+      @else
+        <ul class="list-disc pl-5 text-sm text-on-surface-variant">
+          @foreach($insights as $note)
+            <li class="mb-1">{{ $note }}</li>
+          @endforeach
+        </ul>
+      @endif
+    @endif
+  </div>
 @endsection
