@@ -34,7 +34,7 @@
     $inCompanyArea = request()->is('ui/*');
 @endphp
 
-<aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50">
+<aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50 overflow-y-auto overscroll-y-contain">
   <div class="mb-6 px-2">
     <h1 class="text-lg font-black text-emerald-900 dark:text-emerald-500 tracking-tight">Kudiflow</h1>
     <p class="text-xs text-on-surface-variant opacity-70">Market Assistant</p>

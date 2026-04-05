@@ -18,7 +18,8 @@ class RolePermissionsSeeder extends Seeder
         $defaults = [
             'admin' => ['inventory' => true, 'sales' => true, 'finance' => true, 'people' => true, 'admin' => true],
             'manager' => ['inventory' => true, 'sales' => true, 'finance' => true, 'people' => true, 'admin' => false],
-            'staff' => ['inventory' => false, 'sales' => true, 'finance' => false, 'people' => false, 'admin' => false],
+            // Staff default: sales, inventory
+            'staff' => ['inventory' => true, 'sales' => true, 'finance' => false, 'people' => false, 'admin' => false],
         ];
 
         foreach ($defaults as $role => $perms) {

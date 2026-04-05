@@ -5,6 +5,7 @@ namespace App\Http\Controllers\UI\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TenantRolePermission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class RolePermissionController extends Controller
 {
@@ -40,6 +41,9 @@ class RolePermissionController extends Controller
                 ['tenant_id' => $tenantId, 'role' => $role],
                 ['permissions' => $permissions]
             );
+
+            // Invalidate cached permissions so sidebar reflects latest changes
+            Cache::forget("tenant:{$tenantId}:role:{$role}");
         }
 
         return redirect()->route('admin.roles.index')->with('success', 'Permissions updated.');

@@ -23,7 +23,7 @@ use App\Http\Controllers\UI\PosController;
 
 
 // Landing
-Route::redirect('/', '/ui/dashboard')->name('home');
+Route::view('/', 'landing')->name('home');
 
 // Auth: login, register, logout
 Route::middleware('guest')->group(function () {
@@ -135,12 +135,18 @@ Route::prefix('ui')->middleware(['auth', \App\Http\Middleware\TenantMiddleware::
     Route::get('/staff/create', [\App\Http\Controllers\UI\StaffController::class, 'create'])
         ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':people')
         ->name('ui.staff.create');
+    Route::post('/staff', [\App\Http\Controllers\UI\StaffController::class, 'store'])
+        ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':people')
+        ->name('ui.staff.store');
     Route::get('/staff/{id}', [\App\Http\Controllers\UI\StaffController::class, 'show'])
         ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':people')
         ->name('ui.staff.show');
     Route::get('/staff/{id}/edit', [\App\Http\Controllers\UI\StaffController::class, 'edit'])
         ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':people')
         ->name('ui.staff.edit');
+    Route::put('/staff/{id}', [\App\Http\Controllers\UI\StaffController::class, 'update'])
+        ->middleware(\App\Http\Middleware\PermissionMiddleware::class . ':people')
+        ->name('ui.staff.update');
 
     // Admin
     Route::get('/admin', [\App\Http\Controllers\UI\AdminController::class, 'index'])

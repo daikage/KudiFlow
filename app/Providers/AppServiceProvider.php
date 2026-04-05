@@ -40,19 +40,27 @@ class AppServiceProvider extends ServiceProvider
 
             $super = $user && ($user->super_admin ?? false);
 
-            // Cache role permissions by tenant+role
-            $perm = $super
-                ? ['inventory' => true, 'sales' => true, 'finance' => true, 'people' => true, 'admin' => true]
-                : Cache::remember("tenant:{$tenantId}:role:".($user->role ?? 'staff'), 60, function () use ($tenantId, $user) {
+            if ($super) {
+                // Super admin: show everything
+                $perm = array_fill_keys(PlanManager::MODULES, true);
+                $entitled = array_fill_keys(PlanManager::MODULES, true);
+            } else {
+                // Role-based permissions (cached)
+                $role = $user->role ?? 'staff';
+                $rolePerms = Cache::remember("tenant:{$tenantId}:role:{$role}", 60, function () use ($tenantId, $role) {
                     return TenantRolePermission::where('tenant_id', $tenantId)
-                        ->where('role', $user->role ?? 'staff')
+                        ->where('role', $role)
                         ->value('permissions') ?? [];
                 });
 
-            $entitled = PlanManager::entitlementsForTenant((int) $tenantId);
+                // Plan entitlements (modules included in current plan)
+                $entitled = PlanManager::entitlementsForTenant((int) $tenantId);
 
-            if (!$super && PlanManager::isTrialingTenant((int) $tenantId)) {
-                $perm = array_fill_keys(PlanManager::MODULES, true);
+                // Combine: only show modules both entitled by plan AND allowed by role
+                $perm = [];
+                foreach (PlanManager::MODULES as $m) {
+                    $perm[$m] = (bool) (($rolePerms[$m] ?? false) && ($entitled[$m] ?? false));
+                }
             }
 
             $view->with(compact('perm', 'super', 'entitled'));
