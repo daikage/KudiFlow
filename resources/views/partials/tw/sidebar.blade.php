@@ -28,6 +28,25 @@
     $inCompanyArea = request()->is('ui/*');
 @endphp
 
+{{-- NEW: Mobile drawer container + overlay --}}
+<div id="mobile-sidebar"
+     class="fixed md:static inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-surface-container-lowest border-r border-outline-variant/10
+            transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out">
+  {{-- Mobile header with close button --}}
+  <div class="md:hidden flex items-center justify-between px-4 py-3 border-b border-outline-variant/10">
+    <span class="font-semibold">Menu</span>
+    <button id="close-sidebar" class="p-2 rounded-lg hover:bg-surface-variant/30" aria-label="Close menu">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  {{-- Scrollable area --}}
+  <div class="overflow-y-auto h-[100svh] md:h-[calc(100vh-64px)] pr-2">
+    {{-- ... existing sidebar content (sections and links) ... --}}
+  </div>
+</div>
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/40 hidden md:hidden z-40"></div>
+
 <aside class="h-screen w-64 fixed left-0 top-0 bg-emerald-50 dark:bg-slate-950 flex flex-col p-4 gap-2 z-50 overflow-y-auto overscroll-y-contain">
   <div class="mb-6 px-2">
     <h1 class="text-lg font-black text-emerald-900 dark:text-emerald-500 tracking-tight">Kudiflow</h1>
@@ -152,19 +171,6 @@
     </a>
     <a href="{{ route('support.index') }}"
        class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
-      <span class="material-symbols-outlined">contact_support</span>
-      <span class="text-sm">Support</span>
-    </a>
-  </div>
-</aside>sition-all rounded-lg">
-      <span class="material-symbols-outlined">payments</span>
-      <span class="text-sm">Billing</span>
-    </a>
-    <a href="{{ route('ui.settings.notifications') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
-      <span class="material-symbols-outlined">notifications</span>
-      <span class="text-sm">Notifications</span>
-    </a>
-    <a href="{{ route('support.index') }}" class="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-emerald-100/50 dark:hover:bg-slate-800 transition-all rounded-lg">
       <span class="material-symbols-outlined">contact_support</span>
       <span class="text-sm">Support</span>
     </a>

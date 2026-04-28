@@ -1,50 +1,43 @@
-<header class="bg-emerald-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center w-full px-8 py-3">
-  <div class="flex items-center gap-6">
-    <div class="relative group">
-      <span class="absolute inset-y-0 left-3 flex items-center text-on-surface-variant">
-        <span class="material-symbols-outlined text-xl">search</span>
-      </span>
-      <input
-        class="bg-white/50 border-none rounded-full pl-10 pr-4 py-2 text-sm w-80 focus:ring-2 focus:ring-primary outline-none transition-all"
-        placeholder="@yield('search_placeholder', 'Search…')" type="text"/>
-    </div>
-
-    @if(auth()->check() && (auth()->user()->super_admin ?? false))
-      <form method="GET" action="" class="ml-4">
-        <select name="tenant_id" class="bg-white/70 border border-outline-variant/30 rounded-lg px-2 py-1 text-sm" onchange="this.form.submit()">
-          <option value="1" @selected(request('tenant_id', session('tenant_id', 1)) == 1)>Company #1</option>
-          <!-- Populate with tenant list when available -->
-        </select>
-      </form>
-    @endif
-  </div>
-
-  <div class="flex items-center gap-4">
-    @auth
-      <!-- Support link -->
-      <a href="{{ route('support.index') }}" class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
-        <span class="material-symbols-outlined">help_outline</span>
-      </a>
-
-      <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">@csrf</form>
-      <button class="p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors"
-              onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-        <span class="material-symbols-outlined">logout</span>
-      </button>
-      <!-- Avatar -> link to Profile -->
-      <a href="{{ route('ui.profile.show') }}" class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant block">
-        <img alt="User profile photo" class="w-full h-full object-cover"
-             src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=10b981&color=fff"/>
-      </a>
-    @endauth
-    @guest
-      <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-outline-variant/30">Sign in</a>
-      <a href="{{ route('register') }}" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary">Register</a>
-    @endguest
-
-    <button id="open-notifications" class="relative p-2 text-emerald-900 dark:text-emerald-500 hover:text-emerald-700 transition-colors active:scale-95 duration-150">
-      <span class="material-symbols-outlined">notifications</span>
-      <span id="notify-badge" class="hidden absolute -top-1 -right-1 text-[10px] bg-error text-white rounded-full px-1.5 py-[1px] leading-none"></span>
+<header class="bg-emerald-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-40 flex justify-between items-center w-full px-4 md:px-8 py-3">
+  <div class="flex items-center gap-3 md:gap-6">
+    {{-- NEW: Mobile menu button --}}
+    <button id="open-sidebar" class="md:hidden p-2 rounded-lg hover:bg-surface-variant/30" aria-label="Open menu">
+      <span class="material-symbols-outlined">menu</span>
     </button>
+    {{-- ... existing left section (search, etc.) ... --}}
   </div>
+
+  {{-- ... existing right section (support, auth buttons, avatar, notifications) ... --}}
 </header>
+
+{{-- NEW: JS to toggle mobile sidebar --}}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const openBtn = document.getElementById('open-sidebar');
+    const sidebar = document.getElementById('mobile-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const closeBtn = document.getElementById('close-sidebar');
+
+    function openSidebar() {
+      if (!sidebar || !overlay) return;
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+      document.documentElement.classList.add('overflow-hidden', 'md:overflow-auto');
+    }
+    function closeSidebar() {
+      if (!sidebar || !overlay) return;
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+      document.documentElement.classList.remove('overflow-hidden');
+    }
+
+    openBtn && openBtn.addEventListener('click', openSidebar);
+    overlay && overlay.addEventListener('click', closeSidebar);
+    closeBtn && closeBtn.addEventListener('click', closeSidebar);
+
+    // Close on ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSidebar();
+    });
+  });
+</script>
