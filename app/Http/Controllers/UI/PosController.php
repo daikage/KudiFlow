@@ -167,4 +167,32 @@ class PosController extends Controller
 
         return response()->json(['ok' => true, 'message' => 'Sale completed.']);
     }
+
+    // NEW: scan and add in one request (better UX for mobile scanner and Add button)
+    public function scanAdd(Request $request)
+    {
+        $data = $request->validate([
+            'code' => ['required','string','max:128'],
+            'qty'  => ['nullable','integer','min:1'],
+        ]);
+
+        $tenantId = (int) app('tenant_id');
+
+        $product = Product::where('tenant_id', $tenantId)
+            ->where('status', 'active')
+            ->where(function ($q) use ($data) {
+                $q->where('barcode', $data['code'])
+                  ->orWhere('sku', $data['code']);
+            })
+            ->first();
+
+        if (! $product) {
+            return response()->json(['ok' => false, 'message' => 'Product not found'], 404);
+        }
+
+        $qty = (int) ($data['qty'] ?? 1);
+        $cart = CartService::add($tenantId, $product, $qty);
+
+        return response()->json(['ok' => true, 'cart' => $cart]);
+    }
 }

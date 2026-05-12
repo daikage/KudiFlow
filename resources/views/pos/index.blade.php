@@ -11,6 +11,8 @@
         <div class="flex items-center gap-2">
           <input id="barcodeInput" type="text" placeholder="Scan barcode or enter SKU" class="px-3 py-2 rounded-lg border border-outline-variant/30 bg-surface-container-low w-64" autofocus>
           <button id="scanBtn" class="px-4 py-2 rounded-lg bg-primary text-on-primary">Add</button>
+          <!-- NEW: Mobile-only camera scan button -->
+          <button id="openCameraBtn" class="md:hidden px-3 py-2 rounded-lg border border-outline-variant/30 hover:bg-surface-variant/30">Scan with Camera</button>
         </div>
       </div>
 
@@ -82,6 +84,29 @@
     </div>
   </div>
 
+  <!-- NEW: Mobile scanner overlay -->
+  <div id="scannerOverlay" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+    <div class="relative w-full max-w-sm bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-outline-variant/10">
+        <h3 class="font-bold text-sm">Scan Barcode</h3>
+        <button id="closeScannerBtn" class="p-2 rounded-lg hover:bg-surface-variant/30">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-3">
+        <video id="scannerVideo" class="w-full rounded-lg bg-black" autoplay muted playsinline></video>
+        <p id="scanHelp" class="text-xs text-on-surface-variant mt-2">
+          Align the barcode within the frame. Supports EAN-13, Code 128, and others if your browser supports camera barcode detection.
+        </p>
+        <p id="scanError" class="hidden text-xs text-error mt-2"></p>
+        <div class="mt-3 flex items-center justify-between">
+          <button id="switchCamBtn" class="px-3 py-1.5 rounded-lg border border-outline-variant/30 text-sm">Switch Camera</button>
+          <button id="stopScanBtn" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-sm">Stop</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const csrf = '{{ csrf_token() }}';
 
@@ -134,7 +159,6 @@
       });
       if (res.ok) {
         const js = await res.json();
-        // Add 1 qty of the product
         const addRes = await fetch('{{ route('ui.pos.add') }}', {
           method: 'POST',
           headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
@@ -197,11 +221,124 @@
       const msg = document.getElementById('msg');
       if (js.ok) {
         msg.textContent = 'Sale completed.';
-        // Reload page to reset cart view
         setTimeout(()=>window.location.reload(), 500);
       } else {
         msg.textContent = js.message || 'Checkout failed.';
       }
     });
+
+    // NEW: Mobile-only camera barcode scanning
+    (function setupMobileScanner() {
+      const ua = navigator.userAgent || '';
+      const isMobileUA = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+      const openBtn = document.getElementById('openCameraBtn');
+      const overlay = document.getElementById('scannerOverlay');
+      const closeBtn = document.getElementById('closeScannerBtn');
+      const stopBtn = document.getElementById('stopScanBtn');
+      const switchBtn = document.getElementById('switchCamBtn');
+      const video = document.getElementById('scannerVideo');
+      const scanError = document.getElementById('scanError');
+
+      if (!openBtn) return;
+
+      // Hide button on desktop even if viewport is small
+      if (!isMobileUA) {
+        openBtn.classList.add('hidden');
+        return;
+      }
+
+      let stream = null;
+      let detector = null;
+      let scanning = false;
+      let facingMode = 'environment';
+      let rafId = null;
+
+      async function startScanner() {
+        scanError.classList.add('hidden');
+        if ('BarcodeDetector' in window) {
+          try {
+            const formats = await window.BarcodeDetector.getSupportedFormats?.() || ['ean_13','code_128','upc_e','upc_a','code_39','codabar','qr_code'];
+            detector = new window.BarcodeDetector({ formats });
+          } catch (e) {
+            detector = null;
+          }
+        }
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
+          video.srcObject = stream;
+          await video.play();
+          scanning = true;
+          loopDetect();
+        } catch (err) {
+          scanError.textContent = 'Unable to access camera: ' + (err.message || 'Permission denied');
+          scanError.classList.remove('hidden');
+        }
+      }
+
+      async function loopDetect() {
+        if (!scanning) return;
+        if (detector && video.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+          try {
+            const barcodes = await detector.detect(video);
+            if (barcodes && barcodes.length > 0) {
+              const code = barcodes[0].rawValue || (barcodes[0].rawValue === '' ? '' : null);
+              if (code) {
+                await onDetected(code);
+                return; // stop after first detection
+              }
+            }
+          } catch (e) {
+            // detector might fail sporadically; ignore and continue
+          }
+        }
+        rafId = requestAnimationFrame(loopDetect);
+      }
+
+      async function onDetected(code) {
+        stopScanner();
+        // Fill input and reuse existing flow
+        const input = document.getElementById('barcodeInput');
+        input.value = code;
+        document.getElementById('scanBtn').click();
+      }
+
+      function stopScanner() {
+        scanning = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (video) {
+          video.pause();
+          video.srcObject = null;
+        }
+        if (stream) {
+          stream.getTracks().forEach(t => t.stop());
+          stream = null;
+        }
+        overlay.classList.add('hidden');
+      }
+
+      function toggleFacing() {
+        facingMode = (facingMode === 'environment' ? 'user' : 'environment');
+        // Restart stream with new facing
+        if (scanning) {
+          stopScanner();
+        }
+        startScanner();
+      }
+
+      openBtn.addEventListener('click', startScanner);
+      closeBtn.addEventListener('click', stopScanner);
+      stopBtn.addEventListener('click', stopScanner);
+      switchBtn.addEventListener('click', toggleFacing);
+
+      // Close on overlay background tap
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) stopScanner();
+      });
+
+      // Close on ESC (for devices with keyboards)
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !overlay.classList.contains('hidden')) stopScanner();
+      });
+    })();
   </script>
 @endsection

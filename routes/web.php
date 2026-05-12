@@ -281,6 +281,9 @@ Route::middleware(['auth', 'tenant', 'tenant.status', 'perm:sales'])
         Route::post('/update', [PosController::class, 'update'])->name('update');
         Route::post('/remove', [PosController::class, 'remove'])->name('remove');
         Route::post('/checkout', [PosController::class, 'checkout'])->name('checkout');
+
+        // NEW: single endpoint to scan by code and add to cart, returns updated cart
+        Route::post('/scan-add', [PosController::class, 'scanAdd'])->name('scan_add');
     });
 
 // Public webhooks (no auth, CSRF exempted)
