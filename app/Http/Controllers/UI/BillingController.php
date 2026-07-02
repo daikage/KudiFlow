@@ -4,7 +4,7 @@ namespace App\Http\Controllers\UI;
 
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
-use App\Models\SubscriptionPlan;
+use App\Models\Plan;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -19,10 +19,10 @@ class BillingController extends Controller
         $tenant   = Tenant::findOrFail($tenantId);
 
         $data = $request->validate([
-            'plan_id' => ['required','integer','exists:subscription_plans,id'],
+            'plan_id' => ['required','integer','exists:plans,id'],
         ]);
 
-        $plan = SubscriptionPlan::findOrFail($data['plan_id']);
+        $plan = Plan::findOrFail($data['plan_id']);
 
         // Compute end date based on interval
         $startsAt = now();
@@ -39,7 +39,7 @@ class BillingController extends Controller
         $sub = Subscription::updateOrCreate(
             ['tenant_id' => $tenantId],
             [
-                'plan'         => $plan->slug,
+                'plan'         => $plan->code,
                 'status'       => 'active',
                 'modules'      => $plan->modules ?? [],
                 'starts_at'    => $startsAt,

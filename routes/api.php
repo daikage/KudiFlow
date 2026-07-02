@@ -12,11 +12,11 @@ use App\Http\Controllers\Api\Users\StaffController;
 use App\Http\Controllers\Api\Admin\AdminController;
 use App\Http\Controllers\Api\Admin\SubscriptionController;
 
-// ... existing code ...
+// Public health check (no auth)
 Route::get('/health', [HealthController::class, 'index']);
 
-// API v1 scaffold for Stitch screens
-Route::prefix('v1')->group(function () {
+// API v1 — protected by Sanctum
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Inventory
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
