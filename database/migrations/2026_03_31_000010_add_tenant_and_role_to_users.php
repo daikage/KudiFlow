@@ -33,15 +33,13 @@ return new class extends Migration {
         DB::table('users')->whereNull('tenant_id')->update(['tenant_id' => 1]);
 
         // 3) Add FK after data is valid (without Doctrine)
-        $fkExists = DB::selectOne("
-            SELECT CONSTRAINT_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'users'
-              AND COLUMN_NAME = 'tenant_id'
-              AND REFERENCED_TABLE_NAME IS NOT NULL
-            LIMIT 1
-        ");
+        $fkExists = false;
+        foreach (Schema::getForeignKeys('users') as $fk) {
+            if (in_array('tenant_id', $fk['columns'])) {
+                $fkExists = true;
+                break;
+            }
+        }
 
         if (!$fkExists) {
             Schema::table('users', function (Blueprint $table) {
