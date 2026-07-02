@@ -59,7 +59,7 @@
 
     async function fetchUnread(showOnNew = false) {
         try {
-            const res = await fetch('{{ route("notifications.unread") }}', {
+            const res = await fetch('{{ route("ui.notifications.unread") }}', {
                 credentials: 'same-origin'
             });
             const json = await res.json();
@@ -83,7 +83,7 @@
 
     async function markAllRead() {
         try {
-            await fetch('{{ route("notifications.read_all") }}', {
+            await fetch('{{ route("ui.notifications.read_all") }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
