@@ -154,14 +154,14 @@
       if (!code) return;
       const res = await fetch('{{ route('ui.pos.scan') }}', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
         body: JSON.stringify({code})
       });
       if (res.ok) {
         const js = await res.json();
         const addRes = await fetch('{{ route('ui.pos.add') }}', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
+          headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
           body: JSON.stringify({product_id: js.product.id, qty: 1})
         });
         const addJson = await addRes.json();
@@ -188,7 +188,7 @@
         const qty = parseInt(e.target.value);
         const res = await fetch('{{ route('ui.pos.update') }}', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
+          headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
           body: JSON.stringify({product_id: productId, qty})
         });
         const js = await res.json();
@@ -202,7 +202,7 @@
         const productId = parseInt(tr.getAttribute('data-id'));
         const res = await fetch('{{ route('ui.pos.remove') }}', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
+          headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
           body: JSON.stringify({product_id: productId})
         });
         const js = await res.json();
@@ -214,7 +214,7 @@
       const payment_method = document.getElementById('paymentMethod').value;
       const res = await fetch('{{ route('ui.pos.checkout') }}', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf},
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf},
         body: JSON.stringify({payment_method})
       });
       const js = await res.json().catch(()=>({}));

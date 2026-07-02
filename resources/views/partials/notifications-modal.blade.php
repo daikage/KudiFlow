@@ -60,6 +60,7 @@
     async function fetchUnread(showOnNew = false) {
         try {
             const res = await fetch('{{ route("ui.notifications.unread") }}', {
+                headers: { 'Accept': 'application/json' },
                 credentials: 'same-origin'
             });
             const json = await res.json();
