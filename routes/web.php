@@ -194,3 +194,11 @@ Route::middleware(['auth', 'tenant', 'tenant.status'])
 Route::middleware(['auth', 'sa'])
     ->delete('/admin/tenants/{tenant}', [\App\Http\Controllers\SA\SuperAdminController::class, 'destroyTenant'])
     ->name('admin.tenants.destroy');
+
+Route::middleware(['auth', 'sa'])
+    ->post('/admin/tenants/{tenant}/pause', [\App\Http\Controllers\SA\SuperAdminController::class, 'pauseTenant'])
+    ->name('admin.tenants.pause');
+
+Route::middleware(['auth', 'sa'])
+    ->post('/admin/tenants/{tenant}/resume', [\App\Http\Controllers\SA\SuperAdminController::class, 'resumeTenant'])
+    ->name('admin.tenants.resume');
