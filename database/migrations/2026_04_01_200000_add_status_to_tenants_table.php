@@ -8,9 +8,15 @@ return new class extends Migration {
     public function up()
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->string('status')->default('active')->after('subdomain');
-            $table->timestamp('paused_at')->nullable()->after('status');
-            $table->text('pause_reason')->nullable()->after('paused_at');
+            if (!Schema::hasColumn('tenants', 'status')) {
+                $table->string('status')->default('active')->after('subdomain');
+            }
+            if (!Schema::hasColumn('tenants', 'paused_at')) {
+                $table->timestamp('paused_at')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('tenants', 'pause_reason')) {
+                $table->text('pause_reason')->nullable()->after('paused_at');
+            }
         });
     }
 
