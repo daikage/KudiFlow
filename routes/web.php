@@ -202,3 +202,15 @@ Route::middleware(['auth', 'sa'])
 Route::middleware(['auth', 'sa'])
     ->post('/admin/tenants/{tenant}/resume', [\App\Http\Controllers\SA\SuperAdminController::class, 'resumeTenant'])
     ->name('admin.tenants.resume');
+
+// ──────────────────────────────────────────────
+// TEMPORARY DEBUG ROUTE
+// ──────────────────────────────────────────────
+Route::get('/debug-log', function() {
+    $logFile = storage_path('logs/laravel.log');
+    if (file_exists($logFile)) {
+        return response(file_get_contents($logFile), 200)
+            ->header('Content-Type', 'text/plain');
+    }
+    return 'No log file found.';
+});
